@@ -11,24 +11,13 @@ XCTest와 XCUIApplication 프레임워크는 **full Xcode** 설치 시에만 제
 - **AX/CGWindow 기반 UI 테스트** (`Sources/GOJIPSATests/UITests.swift`) — Xcode 없이 실행 가능, 우리 메인 러너에 통합됨
 - **이 디렉토리** — Xcode 사용자가 별도로 활용
 
-## Xcode 보유 시 통합 방법
+## Xcode 실행
 
-1. Xcode App Store에서 설치
-2. 이 디렉토리 내용을 `Tests/GOJIPSAUITests/`로 복사
-3. `Package.swift`에 testTarget 추가:
-
-```swift
-.testTarget(
-    name: "GOJIPSAUITests",
-    dependencies: ["GOJIPSACore"],
-    path: "Tests/GOJIPSAUITests"
-)
-```
-
-4. 실행:
+이 테스트는 현재 `GOJIPSA.xcodeproj`의 `GOJIPSAUITests` 타깃에 이미 연결되어 있습니다.
 
 ```bash
-xcodebuild -scheme GOJIPSA \
+xcodebuild -project GOJIPSA.xcodeproj \
+    -scheme GOJIPSA \
     -destination 'platform=macOS' \
     -only-testing:GOJIPSAUITests test
 ```

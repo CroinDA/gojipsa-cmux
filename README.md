@@ -36,14 +36,14 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 | 네트워킹 | `URLSession` 직접 사용 (Gemini SDK 의존성 없음) |
 | AI | Google **Gemini 2.5 Flash** REST API (`thinkingBudget=0`, `responseMimeType=application/json`) |
 | 터미널 통합 | `cmux` CLI subprocess (read-screen, tree, ping) — password auth 지원 |
-| 코드 서명 | Apple Development cert + Hardened Runtime |
+| 코드 서명 | Developer ID Application + Hardened Runtime + notarization |
 
-### 빌드 시스템 (양쪽 모두 지원)
+### 빌드 시스템
 
 | 시스템 | 사용처 |
 |--------|--------|
 | **Swift Package Manager** | 빠른 dev loop, 자체 테스트 러너 (XCTest-free) |
-| **Xcode + XcodeGen** | XCUIApplication UI 테스트, IDE 디버깅 |
+| **Xcode project** | Release archive/signing, XCUIApplication UI 테스트, IDE 디버깅 |
 
 ### 테스트
 
@@ -106,38 +106,43 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 ## Install
 
 ### Prerequisites
-- **macOS 13+ (Apple Silicon)**
+- **macOS 13+ (Apple Silicon 또는 Intel)**
 - **[cmux](https://cmux.dev)** (DMG 또는 `brew install cmux`)
 - **Gemini API key** ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
-### Option A — DMG (일반 사용자, 권장)
+### Option A — Homebrew tap (권장)
 
 ```bash
-# 1. 다운로드 + Gatekeeper 우회 (자체서명 빌드)
-cd ~/Downloads && \
-curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.1.dmg && \
-xattr -dr com.apple.quarantine GOJIPSA-2.0.1.dmg && \
-hdiutil attach GOJIPSA-2.0.1.dmg -nobrowse && \
-ditto "/Volumes/GOJIPSA 2.0.1/GOJIPSA.app" "/Applications/GOJIPSA.app" && \
-hdiutil detach "/Volumes/GOJIPSA 2.0.1" && \
-xattr -dr com.apple.quarantine /Applications/GOJIPSA.app
+brew tap CroinDA/gojipsa-cmux
+brew install --cask gojipsa
 
-# 2. API 키 설정
+# API 키 설정
 mkdir -p ~/.gojipsa
 echo "YOUR_GEMINI_API_KEY" > ~/.gojipsa/api-key.txt
 chmod 600 ~/.gojipsa/api-key.txt
 
-# 3. cmux Settings → Socket Control → Password 설정 후 (1-pane 워크플로 권장):
+# cmux Settings → Socket Control → Password 설정 후 (1-pane 워크플로 권장):
 echo "YOUR_CMUX_PASSWORD" > ~/.gojipsa/cmux-password.txt
 chmod 600 ~/.gojipsa/cmux-password.txt
 
-# 4. 실행
-open -a GOJIPSA
+# 실행
+open -a gojipsa
+```
+
+### Option B — DMG
+
+```bash
+cd ~/Downloads
+curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.1.dmg
+hdiutil attach GOJIPSA-2.0.1.dmg -nobrowse
+ditto "/Volumes/GOJIPSA 2.0.1/GOJIPSA.app" "/Applications/GOJIPSA.app"
+hdiutil detach "/Volumes/GOJIPSA 2.0.1"
+open -a gojipsa
 ```
 
 > **구버전 사용자(Sentinel for cmux v1.x)**: `~/.sentinel/` 안의 키 파일은 GOJIPSA 첫 실행 시 자동으로 `~/.gojipsa/`로 복사된다. 0600 권한 유지, 기존 파일은 절대 덮어쓰지 않음.
 
-### Option B — Build from source (개발자)
+### Option C — Build from source (개발자)
 
 ```bash
 git clone https://github.com/CroinDA/gojipsa-cmux.git
@@ -147,14 +152,11 @@ cd gojipsa-cmux
 swift build -c release
 .build/release/GOJIPSA
 
-# 또는 .app + .dmg 생성
-./scripts/build-app.sh
-./scripts/build-dmg.sh
-
-# 또는 Xcode에서 열기
-brew install xcodegen
-xcodegen generate
+# Xcode에서 열기
 open GOJIPSA.xcodeproj
+
+# 배포용 .app + .dmg 생성은 Xcode Apple ID 계정 필요
+VERSION=2.0.1 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 ### 테스트 실행
@@ -167,14 +169,12 @@ GEMINI_TEST_KEY=$(cat ~/.gojipsa/api-key.txt) swift run GOJIPSATests
 xcodebuild -project GOJIPSA.xcodeproj -scheme GOJIPSA test
 ```
 
-### 배포용 (노타라이즈)
+### 배포용 (Gatekeeper 통과)
 
 Apple Developer Program 멤버는 [NOTARIZATION.md](NOTARIZATION.md) 참고:
 
 ```bash
-SIGN_ID="Developer ID Application: NAME (TEAMID)" ./scripts/build-app.sh
-SIGN_ID="Developer ID Application: NAME (TEAMID)" ./scripts/build-dmg.sh
-NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
+VERSION=2.0.1 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 ---

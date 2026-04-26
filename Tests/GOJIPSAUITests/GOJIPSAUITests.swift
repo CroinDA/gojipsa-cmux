@@ -2,11 +2,9 @@ import XCTest
 
 /// UI tests for GOJIPSA — requires Xcode (XCUIApplication).
 ///
-/// To use:
-///   1. Copy this file to `Tests/GOJIPSAUITests/GOJIPSAUITests.swift`
-///   2. Add a `testTarget(name: "GOJIPSAUITests", ...)` to Package.swift
-///   3. `xcodebuild -scheme GOJIPSA -only-testing:GOJIPSAUITests test`
-final final class GOJIPSAUITests: XCTestCase {
+/// Run with:
+///   xcodebuild -project GOJIPSA.xcodeproj -scheme GOJIPSA -only-testing:GOJIPSAUITests test
+final class GOJIPSAUITests: XCTestCase {
 
     // MARK: - Lifecycle
 
@@ -40,7 +38,7 @@ final final class GOJIPSAUITests: XCTestCase {
 
     private func makeApp(args: [String] = []) -> XCUIApplication {
         // No-arg XCUIApplication uses the test target's host app
-        // (TEST_TARGET_NAME = GOJIPSA in project.yml), which is the Xcode-built
+        // (TEST_TARGET_NAME = GOJIPSA in GOJIPSA.xcodeproj), which is the Xcode-built
         // debug binary — NOT /Applications/GOJIPSA.app — so DEBUG flags work.
         let app = XCUIApplication()
         app.launchArguments = args
