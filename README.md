@@ -40,6 +40,11 @@ Swift macOS app (.app bundle)
 
 1. **[Latest Release](https://github.com/CroinDA/sentinel-cmux/releases/latest)** 에서 `Sentinel-X.Y.Z.dmg` 다운로드
 2. 더블클릭 → Sentinel.app을 Applications 폴더로 드래그
+   - **자체서명 빌드인 경우** (v1.0.0 등): Gatekeeper 차단 시
+     ```bash
+     xattr -dr com.apple.quarantine ~/Downloads/Sentinel-*.dmg
+     ```
+   - **노타라이즈된 빌드인 경우** (v1.0.1+): 그냥 더블클릭으로 OK
 3. API 키 설정:
    ```bash
    mkdir -p ~/.sentinel
@@ -66,6 +71,16 @@ cd sentinel-cmux
 # 또는 바이너리만:
 swift build -c release
 .build/release/Sentinel
+```
+
+### 배포용 빌드 (노타라이즈)
+
+Apple Developer Program 멤버는 [NOTARIZATION.md](NOTARIZATION.md) 따라하면 Gatekeeper 통과되는 배포 빌드 만들 수 있음:
+
+```bash
+SIGN_ID="Developer ID Application: NAME (TEAMID)" ./scripts/build-app.sh
+SIGN_ID="Developer ID Application: NAME (TEAMID)" ./scripts/build-dmg.sh
+NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
 ```
 
 cmux 다른 탭을 열고 평소처럼 작업하면 됨. Sentinel은 우측 하단에 떠다니며 참견.
