@@ -1,5 +1,5 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runDangerDetectorTests() async {
     await runSuite("DangerDetector — positive cases (should DETECT)") {

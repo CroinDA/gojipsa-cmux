@@ -1,5 +1,5 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runGeminiClientTests() async {
     let envKey = ProcessInfo.processInfo.environment["GEMINI_TEST_KEY"] ?? ""

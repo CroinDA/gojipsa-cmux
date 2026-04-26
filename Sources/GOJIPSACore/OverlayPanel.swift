@@ -2,9 +2,9 @@ import AppKit
 import Lottie
 import Foundation
 
-/// Module-level helper exposing SentinelCore's resource bundle.
-/// Public so tests (SPM SentinelTests, XCTest) can locate bundled lottie assets.
-public let sentinelCoreResourceBundle: Bundle = {
+/// Module-level helper exposing GOJIPSACore's resource bundle.
+/// Public so tests (SPM GOJIPSATests, XCTest) can locate bundled lottie assets.
+public let gojipsaCoreResourceBundle: Bundle = {
     #if SWIFT_PACKAGE
     return Bundle.module
     #else
@@ -148,7 +148,7 @@ public final class OverlayPanel {
         applyLottie(named: emotion.lottieName)
         bubbleLabel.stringValue = text
         bubbleContainer.layer?.backgroundColor = emotion.bubbleColor.cgColor
-        lottieView.setAccessibilityLabel("Sentinel butler — \(emotion.rawValue)")
+        lottieView.setAccessibilityLabel("GOJIPSA butler — \(emotion.rawValue)")
         resizeBubbleToFit(text: text)
     }
 
@@ -205,7 +205,7 @@ public final class OverlayPanel {
 
     // MARK: - Lottie loading
 
-    private static var resourceBundle: Bundle { sentinelCoreResourceBundle }
+    private static var resourceBundle: Bundle { gojipsaCoreResourceBundle }
 
     private func resolveLottieURL(name: String) -> URL? {
         let bundle = OverlayPanel.resourceBundle

@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# build-app.sh — Builds Sentinel.app bundle from release binary
+# build-app.sh — Builds GOJIPSA.app bundle from release binary
 set -eo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-1.0.0}"
-APP_NAME="Sentinel"
-BUNDLE_ID="dev.croinda.sentinel"
+VERSION="${VERSION:-2.0.0}"
+APP_NAME="GOJIPSA"
+BUNDLE_ID="app.gojipsa.GOJIPSA"
+DISPLAY_NAME="꼬집사 (GOJIPSA)"
 DIST_DIR="$PROJECT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 
@@ -64,7 +65,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
     <key>CFBundleName</key>
     <string>$APP_NAME</string>
     <key>CFBundleDisplayName</key>
-    <string>$APP_NAME for cmux</string>
+    <string>$DISPLAY_NAME</string>
     <key>CFBundleVersion</key>
     <string>$VERSION</string>
     <key>CFBundleShortVersionString</key>
@@ -93,6 +94,8 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 PLIST
 
 echo "🔏 Code signing..."
+# SIGN_ID may be a Developer ID cert ("Developer ID Application: NAME (TEAMID)")
+# or any local self-signed identity in the user's keychain. Override via env var.
 SIGN_ID="${SIGN_ID:-CroinDA HQ Development}"
 if security find-identity -v -p codesigning | grep -q "$SIGN_ID"; then
     codesign --force --deep --sign "$SIGN_ID" --options=runtime "$APP_DIR" 2>&1 | tail -3

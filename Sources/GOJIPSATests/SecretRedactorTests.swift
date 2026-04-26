@@ -1,5 +1,5 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runSecretRedactorTests() async {
     await runSuite("SecretRedactor — secrets are redacted") {

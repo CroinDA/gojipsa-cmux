@@ -52,14 +52,13 @@ public actor ScreenWatcher {
     }
 
     /// Loads cmux socket password (for cmux's password-auth mode).
-    /// Order: CMUX_SOCKET_PASSWORD env var → ~/.sentinel/cmux-password.txt → empty
+    /// Order: CMUX_SOCKET_PASSWORD env var → ~/.gojipsa/cmux-password.txt → empty
     /// Empty result is fine if cmux is in default mode (PID-ancestry auth).
     public static func loadCmuxPassword() -> String {
         if let env = ProcessInfo.processInfo.environment["CMUX_SOCKET_PASSWORD"], !env.isEmpty {
             return env
         }
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let path = home.appendingPathComponent(".sentinel/cmux-password.txt")
+        let path = PathMigration.configDirURL().appendingPathComponent("cmux-password.txt")
 
         // Defense-in-depth: warn if password file has loose permissions.
         // We still read it (don't break the demo), but emit a warning so the user fixes it.

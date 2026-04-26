@@ -1,5 +1,5 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runCmuxStatusTests() async {
 

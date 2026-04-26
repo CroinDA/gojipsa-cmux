@@ -1,23 +1,23 @@
 import XCTest
 
-/// UI tests for Sentinel — requires Xcode (XCUIApplication).
+/// UI tests for GOJIPSA — requires Xcode (XCUIApplication).
 ///
 /// To use:
-///   1. Copy this file to `Tests/SentinelUITests/SentinelUITests.swift`
-///   2. Add a `testTarget(name: "SentinelUITests", ...)` to Package.swift
-///   3. `xcodebuild -scheme Sentinel -only-testing:SentinelUITests test`
-final class SentinelUITests: XCTestCase {
+///   1. Copy this file to `Tests/GOJIPSAUITests/GOJIPSAUITests.swift`
+///   2. Add a `testTarget(name: "GOJIPSAUITests", ...)` to Package.swift
+///   3. `xcodebuild -scheme GOJIPSA -only-testing:GOJIPSAUITests test`
+final final class GOJIPSAUITests: XCTestCase {
 
     // MARK: - Lifecycle
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        // Kill any leftover Sentinel instances from previous tests / earlier installs
+        // Kill any leftover GOJIPSA instances from previous tests / earlier installs
         // (prevents the 'two characters overlapping' UI state where test queries hit
         // stale instance instead of the freshly-launched one).
         let pkill = Process()
         pkill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-        pkill.arguments = ["-f", "Sentinel.app/Contents/MacOS/Sentinel"]
+        pkill.arguments = ["-f", "GOJIPSA.app/Contents/MacOS/GOJIPSA"]
         pkill.standardOutput = Pipe()
         pkill.standardError = Pipe()
         try? pkill.run()
@@ -31,7 +31,7 @@ final class SentinelUITests: XCTestCase {
         // on its own, but if a test failed mid-way we want a clean slate.
         let pkill = Process()
         pkill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-        pkill.arguments = ["-f", "Sentinel.app/Contents/MacOS/Sentinel"]
+        pkill.arguments = ["-f", "GOJIPSA.app/Contents/MacOS/GOJIPSA"]
         pkill.standardOutput = Pipe()
         pkill.standardError = Pipe()
         try? pkill.run()
@@ -40,8 +40,8 @@ final class SentinelUITests: XCTestCase {
 
     private func makeApp(args: [String] = []) -> XCUIApplication {
         // No-arg XCUIApplication uses the test target's host app
-        // (TEST_TARGET_NAME = Sentinel in project.yml), which is the Xcode-built
-        // debug binary — NOT /Applications/Sentinel.app — so DEBUG flags work.
+        // (TEST_TARGET_NAME = GOJIPSA in project.yml), which is the Xcode-built
+        // debug binary — NOT /Applications/GOJIPSA.app — so DEBUG flags work.
         let app = XCUIApplication()
         app.launchArguments = args
         return app
@@ -59,11 +59,11 @@ final class SentinelUITests: XCTestCase {
         XCTAssertTrue(anyText.waitForExistence(timeout: 3),
                       "expected at least one accessible text element from the overlay")
 
-        // Sentinel is an accessory app (LSUIElement=true), so it stays in
+        // GOJIPSA is an accessory app (LSUIElement=true), so it stays in
         // .runningBackground state — never .runningForeground. We just need
         // it to not be terminated.
         XCTAssertNotEqual(app.state, .notRunning,
-                          "Sentinel must be running (any state ≠ notRunning)")
+                          "GOJIPSA must be running (any state ≠ notRunning)")
     }
 
     func testApp_showsAlarmOnDemoFlag() throws {
@@ -167,18 +167,18 @@ final class SentinelUITests: XCTestCase {
     // MARK: - cmux status (--status flag) tests
 
     func testStatus_flagPrintsConnectedAndExitsZero() throws {
-        // Run Sentinel binary directly (not via XCUIApplication) — we want the CLI
+        // Run GOJIPSA binary directly (not via XCUIApplication) — we want the CLI
         // exit code + stdout, not the GUI.
-        // .xctest bundle path: .../Debug/SentinelUITests-Runner.app/Contents/PlugIns/SentinelUITests.xctest
-        // Need to go up 4 directories to reach Debug/, then descend into Sentinel.app
+        // .xctest bundle path: .../Debug/GOJIPSAUITests-Runner.app/Contents/PlugIns/GOJIPSAUITests.xctest
+        // Need to go up 4 directories to reach Debug/, then descend into GOJIPSA.app
         let bundleURL = Bundle(for: type(of: self)).bundleURL
             .deletingLastPathComponent()  // PlugIns/
             .deletingLastPathComponent()  // Contents/
-            .deletingLastPathComponent()  // SentinelUITests-Runner.app
+            .deletingLastPathComponent()  // GOJIPSAUITests-Runner.app
             .deletingLastPathComponent()  // Debug/
-        let appBin = bundleURL.appendingPathComponent("Sentinel.app/Contents/MacOS/Sentinel")
+        let appBin = bundleURL.appendingPathComponent("GOJIPSA.app/Contents/MacOS/GOJIPSA")
         guard FileManager.default.isExecutableFile(atPath: appBin.path) else {
-            throw XCTSkip("Sentinel binary not found at \(appBin.path)")
+            throw XCTSkip("GOJIPSA binary not found at \(appBin.path)")
         }
 
         let proc = Process()
@@ -213,7 +213,7 @@ final class SentinelUITests: XCTestCase {
     func testStatus_startupHealthCheckSurfacesInBubbleWhenDisconnected() throws {
         // We can't easily simulate cmux being down inside a UI test, but we can verify
         // the connected case: the app launches and the startup health check runs without
-        // showing an error bubble. The default "Sentinel awake" overlay should appear.
+        // showing an error bubble. The default "GOJIPSA awake" overlay should appear.
         let app = makeApp(args: ["--demo-overlay", "--dwell", "5"])
         app.launch()
 
@@ -227,20 +227,20 @@ final class SentinelUITests: XCTestCase {
     // MARK: - Gemini integration tests
 
     func testGemini_explainDangerReturnsKoreanResponse() throws {
-        // Launches Sentinel with --demo-gemini-explain flag, which calls
+        // Launches GOJIPSA with --demo-gemini-explain flag, which calls
         // GeminiClient.explainDanger("rm -rf /var/log") live and pipes the
         // response into the bubble. Verifies a non-empty Korean response
         // appears within 12s.
         //
-        // The test runner's HOME may be sandboxed away from real ~/.sentinel,
+        // The test runner's HOME may be sandboxed away from real ~/.gojipsa (and legacy ~/.sentinel),
         // so we resolve the key file via the developer's known absolute path,
-        // then forward it to Sentinel via launchEnvironment["GEMINI_API_KEY"].
+        // then forward it to GOJIPSA via launchEnvironment["GEMINI_API_KEY"].
         // Test is SKIPPED if no key can be obtained.
 
         let candidatePaths = [
-            "/Users/kwangjinpark/.sentinel/api-key.txt",
+            "/Users/kwangjinpark/.gojipsa/api-key.txt",
             (FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".sentinel/api-key.txt")).path,
+                .appendingPathComponent(".gojipsa/api-key.txt")).path,
         ]
         let key: String? = candidatePaths.lazy
             .compactMap { try? String(contentsOfFile: $0, encoding: .utf8) }
@@ -298,6 +298,6 @@ final class SentinelUITests: XCTestCase {
             Thread.sleep(forTimeInterval: 0.2)
         }
         XCTAssertTrue(exited,
-                      "Sentinel should leave .runningForeground within 8s when --dwell 2 expires (state=\(app.state.rawValue))")
+                      "GOJIPSA should leave .runningForeground within 8s when --dwell 2 expires (state=\(app.state.rawValue))")
     }
 }

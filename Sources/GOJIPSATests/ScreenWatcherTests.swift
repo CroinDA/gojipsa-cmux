@@ -1,5 +1,5 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runScreenWatcherTests() async {
     await runSuite("ScreenWatcher — Feature 2 timing constants") {
@@ -24,7 +24,7 @@ func runScreenWatcherTests() async {
         // If user has the file, it should non-empty (or env override is set)
         let envSet = !(ProcessInfo.processInfo.environment["CMUX_SOCKET_PASSWORD"] ?? "").isEmpty
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let pwdPath = home.appendingPathComponent(".sentinel/cmux-password.txt")
+        let pwdPath = home.appendingPathComponent(".gojipsa/cmux-password.txt")
         let fileExists = FileManager.default.fileExists(atPath: pwdPath.path)
         if envSet || fileExists {
             await assert(!loaded.isEmpty, "expected a password to be loaded (env or file present)")

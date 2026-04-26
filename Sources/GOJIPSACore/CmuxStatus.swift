@@ -15,7 +15,7 @@ public enum CmuxStatus: String, Sendable, Equatable {
     case serverNotRunning
 
     /// Server reachable but rejected our connection — we're not a cmux child AND no
-    /// valid password was provided. Fix: set `~/.sentinel/cmux-password.txt` or run inside cmux.
+    /// valid password was provided. Fix: set `~/.gojipsa/cmux-password.txt` or run inside cmux.
     case accessDenied
 
     /// Password was provided but server rejected it.

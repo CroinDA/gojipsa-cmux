@@ -1,11 +1,11 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runSmokeTests() async {
-    await runSuite("Smoke — Sentinel.app binary present and signed") {
-        let appPath = "/Applications/Sentinel.app/Contents/MacOS/Sentinel"
+    await runSuite("Smoke — GOJIPSA.app binary present and signed") {
+        let appPath = "/Applications/GOJIPSA.app/Contents/MacOS/GOJIPSA"
         let exists = FileManager.default.isExecutableFile(atPath: appPath)
-        await assert(exists, "Sentinel binary at \(appPath) should exist & be executable")
+        await assert(exists, "GOJIPSA binary at \(appPath) should exist & be executable")
 
         if exists {
             // Spawn the app, give it 2s, then kill
@@ -20,9 +20,9 @@ func runSmokeTests() async {
                 let alive = proc.isRunning
                 proc.terminate()
                 proc.waitUntilExit()
-                await assert(alive, "Sentinel process should still be alive after 2s (no early crash)")
+                await assert(alive, "GOJIPSA process should still be alive after 2s (no early crash)")
             } catch {
-                await assert(false, "failed to launch Sentinel: \(error)")
+                await assert(false, "failed to launch GOJIPSA: \(error)")
             }
         }
     }
@@ -39,10 +39,9 @@ func runSmokeTests() async {
     }
 
     await runSuite("Smoke — API key file") {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let keyPath = home.appendingPathComponent(".sentinel/api-key.txt")
+        let keyPath = PathMigration.configDirURL().appendingPathComponent("api-key.txt")
         let exists = FileManager.default.fileExists(atPath: keyPath.path)
-        await assert(exists, "~/.sentinel/api-key.txt should exist")
+        await assert(exists, "~/.gojipsa/api-key.txt should exist")
 
         if exists {
             // Permission must be 0600 (owner-only)

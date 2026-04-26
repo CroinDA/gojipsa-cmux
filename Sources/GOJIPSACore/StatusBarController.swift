@@ -15,8 +15,8 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
 
         // Default icon — will be replaced on first status refresh
         if let button = item.button {
-            button.title = "🛡️"
-            button.toolTip = "Sentinel for cmux"
+            button.title = "🤏"
+            button.toolTip = "꼬집사 (GOJIPSA) for cmux"
         }
 
         statusMenuItem.isEnabled = false
@@ -26,7 +26,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
                                 action: #selector(showStatus),
                                 keyEquivalent: "s"))
         menu.addItem(NSMenuItem.separator())
-        let quitItem = NSMenuItem(title: "Quit Sentinel",
+        let quitItem = NSMenuItem(title: "Quit 꼬집사",
                                   action: #selector(quit),
                                   keyEquivalent: "q")
         quitItem.target = self
@@ -56,13 +56,13 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         let report = await ScreenWatcher.quickStatus()
         let (icon, label): (String, String) = {
             switch report.status {
-            case .connected:        return ("🟢🛡️", "Sentinel — cmux connected")
+            case .connected:        return ("🟢🤏", "꼬집사 — cmux connected")
             case .accessDenied,
-                 .passwordRejected: return ("🔒🛡️", "Sentinel — cmux access denied")
+                 .passwordRejected: return ("🔒🤏", "꼬집사 — cmux access denied")
             case .serverNotRunning,
-                 .binaryNotFound:   return ("🔴🛡️", "Sentinel — cmux not running")
-            case .timeout:          return ("⏱🛡️", "Sentinel — cmux timeout")
-            case .unknown:          return ("⚠️🛡️", "Sentinel — cmux unknown")
+                 .binaryNotFound:   return ("🔴🤏", "꼬집사 — cmux not running")
+            case .timeout:          return ("⏱🤏", "꼬집사 — cmux timeout")
+            case .unknown:          return ("⚠️🤏", "꼬집사 — cmux unknown")
             }
         }()
         item.button?.title = icon

@@ -1,6 +1,6 @@
-# Sentinel for cmux 🛡️
+# 꼬집사 (GOJIPSA) for cmux 🤏
 
-> A Context-Aware Native Guardian for Shell Agents.
+> 꼬집다 (Pinch) + 집사 (Butler) — A Context-Aware Native Guardian for Shell Agents.
 > One Swift binary. Zero Python. Zero JS. Zero shell glue.
 
 cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고, 빌드 실패에는 위로하고, 농땡이엔 잔소리. Gemini가 화면을 1초마다 보고 상황에 맞는 한국어 멘트와 표정을 만든다.
@@ -16,10 +16,11 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 | **6 표정 캐릭터** | dotLottie 애니메이션 (idle / talking / celebrating / nagging / alarmed / sleeping) |
 | **위험 명령 가드레일** | 12종 패턴 (rm -rf, force push, DROP TABLE, fork bomb, dd to disk 등) → 풀스크린 빨간 알람 + Gemini 자연어 설명 (1-3초) |
 | **Gemini 라이브 코멘트** | cmux 화면 1초 폴링 → 변화 감지 → Gemini 2.5 Flash 분석 → 캐릭터 + 멘트 |
-| **메뉴바 상태 아이콘** | 🟢🛡️ connected / 🔒🛡️ access denied / 🔴🛡️ down / ⏱🛡️ timeout — 클릭으로 Quit |
+| **메뉴바 상태 아이콘** | 🟢🤏 connected / 🔒🤏 access denied / 🔴🤏 down / ⏱🤏 timeout — 클릭으로 Quit |
 | **시크릿 자동 마스킹** | API 키, JWT, PEM, GitHub 토큰, AWS 키 등 외부 송신 전 자동 redact |
 | **농땡이 잔소리** | 90초 이상 화면 변동 없으면 자연스러운 nag |
 | **단일 Swift 바이너리** | Python/Node/Bash 의존성 0. `.app` 더블클릭으로 실행 |
+| **자동 마이그레이션** | 구버전(Sentinel for cmux)의 `~/.sentinel/` 설정을 첫 실행 시 자동으로 `~/.gojipsa/`로 이전 |
 
 ---
 
@@ -58,20 +59,22 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 
 | 레이어 | 처리 |
 |--------|------|
-| API 키 저장 | `~/.sentinel/api-key.txt` (mode 0600) — env var 우선 |
+| API 키 저장 | `~/.gojipsa/api-key.txt` (mode 0600) — env var 우선 |
 | API 키 전송 | `x-goog-api-key` HTTP 헤더 (URL 쿼리 X) |
 | Gemini 송신 데이터 | SecretRedactor가 sk-/AIza/AKIA/JWT/PEM/Bearer/password= 패턴 자동 마스킹 |
 | 위험 명령 감지 | **로컬 정규식만** (외부 API 송신 X) |
 | cmux password | 별도 파일 (mode 0600) + ENV 우선, loose perm 시 stderr 경고 |
+| 마이그레이션 | `~/.sentinel/` → `~/.gojipsa/` 복사 시 0600 강제, 기존 파일 덮어쓰기 X |
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────── Sentinel.app ──────────────────────┐
+┌──────────────────────── GOJIPSA.app ───────────────────────┐
 │                                                             │
 │   AppDelegate                                               │
+│   ├── PathMigration (~/.sentinel → ~/.gojipsa, 첫 실행만)   │
 │   ├── OverlayPanel (NSPanel)        ┌── Lottie 애니메이션  │
 │   │   ├── LottieAnimationView ◀────┤   (5 emotion)         │
 │   │   └── bubbleLabel (auto-resize) │                       │
@@ -80,7 +83,7 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 │   │   └── 위험 명령 풀스크린 빨간 카드 + Gemini 설명        │
 │   │                                                         │
 │   ├── StatusBarController                                   │
-│   │   └── NSStatusBar item (🛡️) — Quit / Show status        │
+│   │   └── NSStatusBar item (🤏) — Quit / Show status        │
 │   │                                                         │
 │   └── ScreenWatcher (actor)                                 │
 │       │  ┌──────────────────────────────────────────┐       │
@@ -112,35 +115,37 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 ```bash
 # 1. 다운로드 + Gatekeeper 우회 (자체서명 빌드)
 cd ~/Downloads && \
-curl -LO https://github.com/CroinDA/sentinel-cmux/releases/latest/download/Sentinel-1.4.2.dmg && \
-xattr -dr com.apple.quarantine Sentinel-1.4.2.dmg && \
-hdiutil attach Sentinel-1.4.2.dmg -nobrowse && \
-ditto "/Volumes/Sentinel 1.4.2/Sentinel.app" "/Applications/Sentinel.app" && \
-hdiutil detach "/Volumes/Sentinel 1.4.2" && \
-xattr -dr com.apple.quarantine /Applications/Sentinel.app
+curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.0.dmg && \
+xattr -dr com.apple.quarantine GOJIPSA-2.0.0.dmg && \
+hdiutil attach GOJIPSA-2.0.0.dmg -nobrowse && \
+ditto "/Volumes/GOJIPSA 2.0.0/GOJIPSA.app" "/Applications/GOJIPSA.app" && \
+hdiutil detach "/Volumes/GOJIPSA 2.0.0" && \
+xattr -dr com.apple.quarantine /Applications/GOJIPSA.app
 
 # 2. API 키 설정
-mkdir -p ~/.sentinel
-echo "YOUR_GEMINI_API_KEY" > ~/.sentinel/api-key.txt
-chmod 600 ~/.sentinel/api-key.txt
+mkdir -p ~/.gojipsa
+echo "YOUR_GEMINI_API_KEY" > ~/.gojipsa/api-key.txt
+chmod 600 ~/.gojipsa/api-key.txt
 
 # 3. cmux Settings → Socket Control → Password 설정 후 (1-pane 워크플로 권장):
-echo "YOUR_CMUX_PASSWORD" > ~/.sentinel/cmux-password.txt
-chmod 600 ~/.sentinel/cmux-password.txt
+echo "YOUR_CMUX_PASSWORD" > ~/.gojipsa/cmux-password.txt
+chmod 600 ~/.gojipsa/cmux-password.txt
 
 # 4. 실행
-open -a Sentinel
+open -a GOJIPSA
 ```
+
+> **구버전 사용자(Sentinel for cmux v1.x)**: `~/.sentinel/` 안의 키 파일은 GOJIPSA 첫 실행 시 자동으로 `~/.gojipsa/`로 복사된다. 0600 권한 유지, 기존 파일은 절대 덮어쓰지 않음.
 
 ### Option B — Build from source (개발자)
 
 ```bash
-git clone https://github.com/CroinDA/sentinel-cmux.git
-cd sentinel-cmux
+git clone https://github.com/CroinDA/gojipsa-cmux.git
+cd gojipsa-cmux
 
 # SPM 빌드 (가장 빠름)
 swift build -c release
-.build/release/Sentinel
+.build/release/GOJIPSA
 
 # 또는 .app + .dmg 생성
 ./scripts/build-app.sh
@@ -149,17 +154,17 @@ swift build -c release
 # 또는 Xcode에서 열기
 brew install xcodegen
 xcodegen generate
-open Sentinel.xcodeproj
+open GOJIPSA.xcodeproj
 ```
 
 ### 테스트 실행
 
 ```bash
 # SPM 자체 러너 (Xcode 미설치도 OK) — 107개
-GEMINI_TEST_KEY=$(cat ~/.sentinel/api-key.txt) swift run SentinelTests
+GEMINI_TEST_KEY=$(cat ~/.gojipsa/api-key.txt) swift run GOJIPSATests
 
 # XCTest UI 테스트 (Xcode 필요)
-xcodebuild -project Sentinel.xcodeproj -scheme Sentinel test
+xcodebuild -project GOJIPSA.xcodeproj -scheme GOJIPSA test
 ```
 
 ### 배포용 (노타라이즈)
@@ -180,14 +185,15 @@ NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
 - **전송 전 자동 마스킹**: API 키, JWT, PEM, GitHub/AWS 토큰, password 변수
 - 위험 명령 감지(rm -rf 등)는 **로컬 정규식만** — 외부 송신 없음
 - API 키 + cmux password 파일 권한: 0600
+- 레거시 마이그레이션은 home dir 안에서만 동작 (외부 경로 접근 X)
 
 ---
 
 ## Workflows
 
-| 모드 | cmux 탭 수 | Sentinel 실행 위치 | 설정 |
-|------|----------|--------------------|------|
-| 기본 (PID-ancestry auth) | 2개 (작업 + Sentinel) | cmux 탭 안 (foreground) | API key만 |
+| 모드 | cmux 탭 수 | GOJIPSA 실행 위치 | 설정 |
+|------|----------|------------------|------|
+| 기본 (PID-ancestry auth) | 2개 (작업 + GOJIPSA) | cmux 탭 안 (foreground) | API key만 |
 | **Password auth (권장)** | **1개로 OK** | 아무데서나 (Spotlight 등) | API key + cmux password |
 
 ---
@@ -196,4 +202,4 @@ NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
 MIT
 
 ---
-🛡️ Sentinel — for the agentic era of shells.
+🤏 꼬집사 — for the agentic era of shells.

@@ -1,12 +1,12 @@
 import XCTest
 
-/// UI tests for Sentinel — requires Xcode (XCUIApplication).
+/// UI tests for GOJIPSA — requires Xcode (XCUIApplication).
 ///
 /// To use:
-///   1. Copy this file to `Tests/SentinelUITests/SentinelUITests.swift`
-///   2. Add a `testTarget(name: "SentinelUITests", ...)` to Package.swift
-///   3. `xcodebuild -scheme Sentinel -only-testing:SentinelUITests test`
-final class SentinelUITests: XCTestCase {
+///   1. Copy this file to `Tests/GOJIPSAUITests/GOJIPSAUITests.swift`
+///   2. Add a `testTarget(name: "GOJIPSAUITests", ...)` to Package.swift
+///   3. `xcodebuild -scheme GOJIPSA -only-testing:GOJIPSAUITests test`
+final class GOJIPSAUITests: XCTestCase {
 
     // MARK: - Lifecycle
 
@@ -15,7 +15,7 @@ final class SentinelUITests: XCTestCase {
     }
 
     private func makeApp(args: [String] = []) -> XCUIApplication {
-        let app = XCUIApplication(bundleIdentifier: "dev.croinda.sentinel")
+        let app = XCUIApplication(bundleIdentifier: "app.gojipsa.GOJIPSA")
         app.launchArguments = args
         return app
     }
@@ -26,7 +26,7 @@ final class SentinelUITests: XCTestCase {
         let app = makeApp(args: ["--demo-overlay", "--dwell", "5"])
         app.launch()
 
-        // Sentinel uses a borderless NSPanel — XCUI may surface it as a window
+        // GOJIPSA uses a borderless NSPanel — XCUI may surface it as a window
         let firstWindow = app.windows.firstMatch
         XCTAssertTrue(firstWindow.waitForExistence(timeout: 3),
                       "overlay window should appear within 3s")
@@ -89,6 +89,6 @@ final class SentinelUITests: XCTestCase {
             if app.state == .notRunning { exited = true; break }
             Thread.sleep(forTimeInterval: 0.2)
         }
-        XCTAssertTrue(exited, "Sentinel should self-exit within 5s when --dwell 2 expires")
+        XCTAssertTrue(exited, "GOJIPSA should self-exit within 5s when --dwell 2 expires")
     }
 }

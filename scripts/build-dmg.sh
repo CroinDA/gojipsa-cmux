@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# build-dmg.sh — Create distributable .dmg from Sentinel.app
+# build-dmg.sh — Create distributable .dmg from GOJIPSA.app
 set -eo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-1.0.0}"
-APP_NAME="Sentinel"
+VERSION="${VERSION:-2.0.0}"
+APP_NAME="GOJIPSA"
 DIST_DIR="$PROJECT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 DMG_NAME="$APP_NAME-$VERSION.dmg"

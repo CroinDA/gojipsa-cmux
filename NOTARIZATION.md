@@ -1,4 +1,4 @@
-# Notarization Guide — Sentinel for cmux
+# Notarization Guide — 꼬집사 (GOJIPSA) for cmux
 
 > macOS Gatekeeper 통과되는 배포용 빌드 만드는 흐름.
 > Apple Developer Program 멤버십 보유자가 한 번만 셋업하면 됨.
@@ -17,7 +17,7 @@ SIGN_ID="Developer ID Application: 팀원이름 (TEAMID)" ./scripts/build-dmg.sh
 NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
 ```
 
-끝. `dist/Sentinel-X.Y.Z.dmg`가 노타라이즈+staple된 배포용 빌드.
+끝. `dist/GOJIPSA-X.Y.Z.dmg`가 노타라이즈+staple된 배포용 빌드.
 
 ---
 
@@ -48,7 +48,7 @@ NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
 
 1. [https://appleid.apple.com](https://appleid.apple.com) 로그인
 2. **Sign-In and Security** → **App-Specific Passwords** → **Generate Password**
-3. 라벨: `Sentinel notarization`
+3. 라벨: `GOJIPSA notarization`
 4. 16자리 비밀번호 표시됨 (예: `abcd-efgh-ijkl-mnop`) — 한 번만 보여주니 메모
 
 ### 1-3. Team ID 확인
@@ -80,18 +80,18 @@ Credentials saved to Keychain.
 ## Phase 2 — Build & Sign
 
 ```bash
-cd sentinel-cmux
+cd gojipsa-cmux
 
 # SIGN_ID는 1-1에서 확인한 정확한 cert 이름 (따옴표 안 전체)
 export SIGN_ID="Developer ID Application: 홍길동 (XYZ987654)"
 
-./scripts/build-app.sh   # → dist/Sentinel.app (Hardened Runtime + Developer ID 서명)
-./scripts/build-dmg.sh   # → dist/Sentinel-1.0.0.dmg (서명됨)
+./scripts/build-app.sh   # → dist/GOJIPSA.app (Hardened Runtime + Developer ID 서명)
+./scripts/build-dmg.sh   # → dist/GOJIPSA-2.0.0.dmg (서명됨)
 ```
 
 검증:
 ```bash
-codesign -dv --verbose=4 dist/Sentinel.app 2>&1 | grep "Authority\|Identifier\|Runtime"
+codesign -dv --verbose=4 dist/GOJIPSA.app 2>&1 | grep "Authority\|Identifier\|Runtime"
 ```
 **Authority=Developer ID Application** 가 보여야 함. 안 보이면 인증서 셋업 다시 확인.
 
@@ -113,7 +113,7 @@ export NOTARY_PROFILE="AC_NOTARY"
 
 성공 시 끝에:
 ```
-✅ Notarized & stapled: dist/Sentinel-1.0.0.dmg
+✅ Notarized & stapled: dist/GOJIPSA-2.0.0.dmg
    spctl: source=Notarized Developer ID
 ```
 
@@ -124,9 +124,9 @@ export NOTARY_PROFILE="AC_NOTARY"
 ## Phase 4 — 릴리즈 업로드
 
 ```bash
-gh release create v1.0.1 \
-    "dist/Sentinel-1.0.1.dmg" \
-    --title "Sentinel for cmux v1.0.1" \
+gh release create v2.0.1 \
+    "dist/GOJIPSA-2.0.1.dmg" \
+    --title "꼬집사 (GOJIPSA) v2.0.1" \
     --notes "Notarized release"
 ```
 

@@ -9,7 +9,7 @@ dist/
 build/
 
 # XcodeGen output — regenerated from project.yml, no need to track
-Sentinel.xcodeproj/
+GOJIPSA.xcodeproj/
 
 # Xcode user-specific
 *.xcuserstate
@@ -25,6 +25,7 @@ xcuserdata/
 .DS_Store
 
 # Secrets
+.gojipsa/
 .sentinel/
 api-key.txt
 .env

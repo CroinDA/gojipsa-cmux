@@ -1,6 +1,6 @@
 import Foundation
 
-print("🧪 Sentinel test suite")
+print("🧪 GOJIPSA test suite")
 
 await runSmokeTests()
 await runDangerDetectorTests()

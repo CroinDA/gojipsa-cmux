@@ -6,8 +6,8 @@ set -eo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-1.0.0}"
-APP_NAME="Sentinel"
+VERSION="${VERSION:-2.0.0}"
+APP_NAME="GOJIPSA"
 DIST_DIR="$PROJECT_DIR/dist"
 DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
 APP_DIR="$DIST_DIR/$APP_NAME.app"

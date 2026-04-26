@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 #if SWIFT_PACKAGE
-import SentinelCore
+import GOJIPSACore
 #endif
 
 @MainActor
@@ -13,9 +13,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusBar: StatusBarController!
 
     func applicationDidFinishLaunching(_ note: Notification) {
+        // First-run migration: copy ~/.sentinel/* → ~/.gojipsa/* for v1.x users.
+        // Best-effort, never throws — see PathMigration.swift for details.
+        PathMigration.migrateLegacyIfNeeded()
+
         let apiKey = loadApiKey()
         if apiKey.isEmpty {
-            FileHandle.standardError.write(Data("⚠️  GEMINI_API_KEY missing. Set env var or write to ~/.sentinel/api-key.txt\n".utf8))
+            FileHandle.standardError.write(Data("⚠️  GEMINI_API_KEY missing. Set env var or write to ~/.gojipsa/api-key.txt\n".utf8))
         }
 
         // ─── --status: print cmux connection state and exit (CLI tool mode) ───
@@ -39,15 +43,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         panel = OverlayPanel()
         panel.show()
-        panel.speak("👀 Sentinel awake. Watching your shell...", emotion: .idle)
+        panel.speak("👀 꼬집사 깼어. 터미널 보고 있을게.", emotion: .idle)
 
         alarm = AlarmPanel()
         // Always-visible menu bar item — green/red dot reflects cmux state,
-        // click to see status / quit Sentinel.
+        // click to see status / quit GOJIPSA.
         statusBar = StatusBarController()
 
         // ─── Startup health check — surface cmux status visually so the user
-        //     immediately knows if Sentinel can actually read their terminal.
+        //     immediately knows if GOJIPSA can actually read their terminal.
         //     Suppressed when running with any --demo-* flag (those are reserved
         //     for UI tests / manual feature demos and shouldn't be polluted by
         //     status overrides). ───
@@ -65,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // ─── UI test / manual demo entry points ───
         // Available in both debug and release so users can verify lottie mappings
-        // visually with `Sentinel --demo-speak ... --emotion <name>`.
+        // visually with `GOJIPSA --demo-speak ... --emotion <name>`.
         let args = CommandLine.arguments
         if args.contains("--demo-overlay") {
             panel.speak("🧪 UI test — overlay ready", emotion: .talking)
@@ -189,8 +193,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let env = ProcessInfo.processInfo.environment["GEMINI_API_KEY"], !env.isEmpty {
             return env
         }
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let keyPath = home.appendingPathComponent(".sentinel/api-key.txt")
+        let configDir = PathMigration.configDirURL()
+        let keyPath = configDir.appendingPathComponent("api-key.txt")
         if let data = try? Data(contentsOf: keyPath),
            let str = String(data: data, encoding: .utf8) {
             return str.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -203,7 +207,7 @@ MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()
     // Strong-retain delegate beyond scope
-    objc_setAssociatedObject(app, "sentinelDelegate", delegate, .OBJC_ASSOCIATION_RETAIN)
+    objc_setAssociatedObject(app, "gojipsaDelegate", delegate, .OBJC_ASSOCIATION_RETAIN)
     app.delegate = delegate
     app.setActivationPolicy(.accessory)
     app.activate(ignoringOtherApps: true)

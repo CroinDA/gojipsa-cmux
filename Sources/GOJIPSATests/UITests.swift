@@ -4,9 +4,9 @@ import AppKit
 // MARK: - UI test infrastructure (XCTest-free, runs without Xcode)
 //
 // These tests exercise the actual NSApplication binary by:
-//   1. Launching `.build/debug/Sentinel` as a subprocess with a test flag
+//   1. Launching `.build/debug/GOJIPSA` as a subprocess with a test flag
 //      (`--demo-overlay` or `--demo-alarm`) plus `--dwell <seconds>`
-//   2. Polling CGWindowListCopyWindowInfo to verify Sentinel windows appear
+//   2. Polling CGWindowListCopyWindowInfo to verify GOJIPSA windows appear
 //   3. Letting the test process auto-exit() after the dwell window
 //
 // Why CGWindowListCopyWindowInfo: it returns window metadata (owner, bounds,
@@ -14,12 +14,12 @@ import AppKit
 // enough for layout + presence checks. For deep input simulation use
 // XCUIApplication (Xcode required — see xctest-ui-templates/).
 
-private let sentinelBinary: String = {
+private let gojipsaBinary: String = {
     let candidates = [
         // SPM debug build relative to project root (when running via swift run)
-        FileManager.default.currentDirectoryPath + "/.build/debug/Sentinel",
+        FileManager.default.currentDirectoryPath + "/.build/debug/GOJIPSA",
         // Installed app
-        "/Applications/Sentinel.app/Contents/MacOS/Sentinel",
+        "/Applications/GOJIPSA.app/Contents/MacOS/GOJIPSA",
     ]
     return candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) ?? candidates[0]
 }()
@@ -47,11 +47,11 @@ private func windows(ownedBy owner: String) -> [WindowInfo] {
     }
 }
 
-/// Launch Sentinel with given arguments, return Process. Caller must terminate.
-private func launchSentinel(_ args: [String]) -> Process? {
-    guard FileManager.default.isExecutableFile(atPath: sentinelBinary) else { return nil }
+/// Launch GOJIPSA with given arguments, return Process. Caller must terminate.
+private func launchGojipsa(_ args: [String]) -> Process? {
+    guard FileManager.default.isExecutableFile(atPath: gojipsaBinary) else { return nil }
     let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: sentinelBinary)
+    proc.executableURL = URL(fileURLWithPath: gojipsaBinary)
     proc.arguments = args
     proc.standardOutput = Pipe()
     proc.standardError = Pipe()
@@ -62,27 +62,27 @@ private func launchSentinel(_ args: [String]) -> Process? {
 // MARK: - Test cases
 
 func runUITests() async {
-    await runSuite("UI — Sentinel binary launchable") {
-        let exists = FileManager.default.isExecutableFile(atPath: sentinelBinary)
-        await assert(exists, "Sentinel binary at \(sentinelBinary) should exist & be executable")
+    await runSuite("UI — GOJIPSA binary launchable") {
+        let exists = FileManager.default.isExecutableFile(atPath: gojipsaBinary)
+        await assert(exists, "GOJIPSA binary at \(gojipsaBinary) should exist & be executable")
         if !exists {
             print("    ⚠ binary not found — skipping further UI tests in this run")
         }
     }
 
     await runSuite("UI — overlay window appears within 3s (--demo-overlay)") {
-        guard let proc = launchSentinel(["--demo-overlay", "--dwell", "5"]) else {
-            await assert(false, "could not launch Sentinel"); return
+        guard let proc = launchGojipsa(["--demo-overlay", "--dwell", "5"]) else {
+            await assert(false, "could not launch GOJIPSA"); return
         }
         defer { proc.terminate() }
 
         var found: [WindowInfo] = []
         for _ in 0..<15 {  // up to ~3 seconds
             try? await Task.sleep(nanoseconds: 200_000_000)
-            found = windows(ownedBy: "Sentinel")
+            found = windows(ownedBy: "GOJIPSA")
             if !found.isEmpty { break }
         }
-        await assert(!found.isEmpty, "no Sentinel-owned windows seen within 3s")
+        await assert(!found.isEmpty, "no GOJIPSA-owned windows seen within 3s")
         if let first = found.first {
             print("    ↳ found window: bounds=\(first.bounds) title='\(first.title)'")
             // Overlay should be in the bottom-right region of some screen
@@ -92,8 +92,8 @@ func runUITests() async {
     }
 
     await runSuite("UI — alarm panel appears (--demo-alarm)") {
-        guard let proc = launchSentinel(["--demo-alarm", "--dwell", "5"]) else {
-            await assert(false, "could not launch Sentinel"); return
+        guard let proc = launchGojipsa(["--demo-alarm", "--dwell", "5"]) else {
+            await assert(false, "could not launch GOJIPSA"); return
         }
         defer { proc.terminate() }
 
@@ -101,7 +101,7 @@ func runUITests() async {
         var alarmWindows: [WindowInfo] = []
         for _ in 0..<20 {  // up to ~4 seconds
             try? await Task.sleep(nanoseconds: 200_000_000)
-            let all = windows(ownedBy: "Sentinel")
+            let all = windows(ownedBy: "GOJIPSA")
             // The alarm covers the full screen — bigger than overlay's 320×180
             alarmWindows = all.filter { $0.bounds.width > 600 && $0.bounds.height > 300 }
             if !alarmWindows.isEmpty { break }
@@ -115,32 +115,32 @@ func runUITests() async {
     await runSuite("UI — bubble: --demo-speak shows overlay window") {
         // Custom runner can't read NSTextField text content (no AX permission)
         // — but we can verify the overlay window appears when --demo-speak fires.
-        guard let proc = launchSentinel(["--demo-speak", "smoke-text", "--dwell", "5"]) else {
-            await assert(false, "could not launch Sentinel"); return
+        guard let proc = launchGojipsa(["--demo-speak", "smoke-text", "--dwell", "5"]) else {
+            await assert(false, "could not launch GOJIPSA"); return
         }
         defer { proc.terminate() }
         var found: [WindowInfo] = []
         for _ in 0..<15 {
             try? await Task.sleep(nanoseconds: 200_000_000)
-            found = windows(ownedBy: "Sentinel")
+            found = windows(ownedBy: "GOJIPSA")
             if !found.isEmpty { break }
         }
         await assert(!found.isEmpty, "bubble overlay should appear within 3s of --demo-speak")
     }
 
     await runSuite("UI — bubble: --demo-speak-multi runs 3 updates without crash") {
-        guard let proc = launchSentinel(["--demo-speak-multi", "--dwell", "6"]) else {
-            await assert(false, "could not launch Sentinel"); return
+        guard let proc = launchGojipsa(["--demo-speak-multi", "--dwell", "6"]) else {
+            await assert(false, "could not launch GOJIPSA"); return
         }
         defer { proc.terminate() }
         // App should stay alive through all 3 speak() invocations
         try? await Task.sleep(nanoseconds: 4_500_000_000)  // 4.5s — past 2nd update
-        await assert(proc.isRunning, "Sentinel should survive multiple speak() calls without crashing")
+        await assert(proc.isRunning, "GOJIPSA should survive multiple speak() calls without crashing")
     }
 
     await runSuite("UI — process self-exits after dwell expires") {
-        guard let proc = launchSentinel(["--demo-overlay", "--dwell", "2"]) else {
-            await assert(false, "could not launch Sentinel"); return
+        guard let proc = launchGojipsa(["--demo-overlay", "--dwell", "2"]) else {
+            await assert(false, "could not launch GOJIPSA"); return
         }
         // Wait up to 5 seconds for self-exit
         var exited = false
@@ -149,6 +149,6 @@ func runUITests() async {
             if !proc.isRunning { exited = true; break }
         }
         if !exited { proc.terminate() }
-        await assert(exited, "Sentinel should self-exit within 5s when --dwell 2 expires")
+        await assert(exited, "GOJIPSA should self-exit within 5s when --dwell 2 expires")
     }
 }

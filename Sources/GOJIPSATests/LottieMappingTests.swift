@@ -1,5 +1,5 @@
 import Foundation
-import SentinelCore
+import GOJIPSACore
 
 func runLottieMappingTests() async {
     await runSuite("Lottie — Emotion.lottieName mapping (every emotion has a lottie)") {
@@ -13,13 +13,13 @@ func runLottieMappingTests() async {
 
     await runSuite("Lottie — bundle resources present") {
         // SPM build copies Resources/lottie/ → Bundle.module.bundleURL/lottie/
-        let bundle = sentinelCoreResourceBundle
+        let bundle = gojipsaCoreResourceBundle
         let names = ["dancing", "note_taking", "nodding_sighingly", "Checking", "frightening"]
         for name in names {
             let url = bundle.url(forResource: name, withExtension: "lottie", subdirectory: "lottie")
                 ?? bundle.url(forResource: name, withExtension: "lottie")
                 ?? bundle.resourceURL?.appendingPathComponent("lottie/\(name).lottie")
-            await assertNotNil(url, "\(name).lottie should be locatable in SentinelCore bundle")
+            await assertNotNil(url, "\(name).lottie should be locatable in GOJIPSACore bundle")
             if let u = url {
                 let exists = FileManager.default.fileExists(atPath: u.path)
                 await assert(exists, "\(name).lottie file must exist on disk at \(u.path)")
@@ -31,7 +31,7 @@ func runLottieMappingTests() async {
     }
 
     await runSuite("Lottie — file format sanity (ZIP container)") {
-        let bundle = sentinelCoreResourceBundle
+        let bundle = gojipsaCoreResourceBundle
         guard let url = bundle.url(forResource: "dancing", withExtension: "lottie", subdirectory: "lottie")
                 ?? bundle.url(forResource: "dancing", withExtension: "lottie")
                 ?? bundle.resourceURL?.appendingPathComponent("lottie/dancing.lottie") else {
