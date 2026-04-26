@@ -63,6 +63,8 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
             case .serverNotRunning,
                  .binaryNotFound:   return ("🔴🤏", "꼬집사 — cmux not running")
             case .timeout:          return ("⏱🤏", "꼬집사 — cmux timeout")
+            case .contextUnavailable:
+                return ("🟠🤏", "꼬집사 — cmux context unavailable")
             case .unknown:          return ("⚠️🤏", "꼬집사 — cmux unknown")
             }
         }()

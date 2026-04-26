@@ -8,6 +8,10 @@ Package.resolved
 # Build artifacts
 dist/
 build/
+output/
+*.xcarchive/
+*.dSYM/
+*.xcresult/
 
 # Canonical Xcode project is tracked.
 # Keep stale local/generated projects out of git.

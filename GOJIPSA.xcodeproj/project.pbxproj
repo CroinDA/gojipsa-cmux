@@ -8,37 +8,33 @@
 
 /* Begin PBXBuildFile section */
 		1DE27C6BC30C04159222ACB3 /* CmuxStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFD3FEBE4588C3405C64219 /* CmuxStatus.swift */; };
-		228F0D1C4B6954E5283777AD /* GOJIPSAUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE395EE2187CE6CE43A8B2A /* GOJIPSAUITests.swift */; };
 		22BB88E7F74DF0491C33710A /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5A424F953D61860AA9497C /* OverlayPanel.swift */; };
+		23D492711A65D2222B4B9EAB /* CmuxConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB0049C43F87238DBC9FF587 /* CmuxConfiguration.swift */; };
 		2F5296DEFA13F44F77E983CD /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 705669D911FB7BF1E02BE888 /* StatusBarController.swift */; };
 		54957A14003A3292AB7F7B6A /* DangerDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABE7BAA61C7CB144E89D36D7 /* DangerDetector.swift */; };
 		8AA1DE217C546AB91CE9B36C /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0B8E5B3DC2F91978C4B4D4 /* main.swift */; };
 		9F9E35F33323F4F43E1EDC34 /* GeminiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61FBD76FDC4FA4C765DC106 /* GeminiClient.swift */; };
+		A5B8832BED62487365E4B443 /* CmuxCommandRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F84DACDD21C1D76F6454B603 /* CmuxCommandRunner.swift */; };
 		B14C025225E94AFC583A6511 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = 31A2026FD7C320B8032390DC /* Resources */; };
 		B19EDE07D967D793723375DE /* PathMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC08ACEAE00232405C11B2A /* PathMigration.swift */; };
 		BA9C2008C961B36C6CB00E51 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 400DD666AC5C1259976F99F4 /* Lottie */; };
+		D801DD3CCCFC6D0A8879E575 /* CmuxClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4801D6BE71852A7997365B0A /* CmuxClient.swift */; };
 		EAE568EAD046D1F273CFECD9 /* AlarmPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDFB3E84175F7729B49EB07 /* AlarmPanel.swift */; };
 		F4012AC18C69909E7EE70576 /* ScreenWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1B76048E29D9FA29A8D4C2 /* ScreenWatcher.swift */; };
+		F15E62D72AE6D05C481A52E5 /* CmuxTerminalContextProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2BEBF978C09E8E80E90F953 /* CmuxTerminalContextProvider.swift */; };
 		FB1A69424A267041BE1EFAEB /* SecretRedactor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B968555AF7EC3702D7A118 /* SecretRedactor.swift */; };
+		21E7B7AC08D52D15380B3B46 /* CmuxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A8C6F146675A9A41E7DC2F /* CmuxModels.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		ACB2CD6D93367E9316BA8379 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 3C5C45DE888DF1B9DDE7684D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 42400087503E79E0BF0E264C;
-			remoteInfo = GOJIPSA;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0DFD3FEBE4588C3405C64219 /* CmuxStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmuxStatus.swift; sourceTree = "<group>"; };
 		31A2026FD7C320B8032390DC /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/GOJIPSACore/Resources; sourceTree = SOURCE_ROOT; };
-		4EE395EE2187CE6CE43A8B2A /* GOJIPSAUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GOJIPSAUITests.swift; sourceTree = "<group>"; };
+		4801D6BE71852A7997365B0A /* CmuxClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmuxClient.swift; sourceTree = "<group>"; };
 		705669D911FB7BF1E02BE888 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		74B968555AF7EC3702D7A118 /* SecretRedactor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecretRedactor.swift; sourceTree = "<group>"; };
 		8BC08ACEAE00232405C11B2A /* PathMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathMigration.swift; sourceTree = "<group>"; };
+		91A8C6F146675A9A41E7DC2F /* CmuxModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmuxModels.swift; sourceTree = "<group>"; };
+		A2BEBF978C09E8E80E90F953 /* CmuxTerminalContextProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmuxTerminalContextProvider.swift; sourceTree = "<group>"; };
 		ABDFB3E84175F7729B49EB07 /* AlarmPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmPanel.swift; sourceTree = "<group>"; };
 		ABE7BAA61C7CB144E89D36D7 /* DangerDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DangerDetector.swift; sourceTree = "<group>"; };
 		AE0B8E5B3DC2F91978C4B4D4 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -46,7 +42,8 @@
 		C69C58FC4D4A231863465F00 /* GOJIPSA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GOJIPSA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD5A424F953D61860AA9497C /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		CE1B76048E29D9FA29A8D4C2 /* ScreenWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenWatcher.swift; sourceTree = "<group>"; };
-		F2706B0C44DCF6D44D850D87 /* GOJIPSAUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GOJIPSAUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB0049C43F87238DBC9FF587 /* CmuxConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmuxConfiguration.swift; sourceTree = "<group>"; };
+		F84DACDD21C1D76F6454B603 /* CmuxCommandRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmuxCommandRunner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,15 +58,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		2E263C974554FC1B2891B0ED /* GOJIPSAUITests */ = {
-			isa = PBXGroup;
-			children = (
-				4EE395EE2187CE6CE43A8B2A /* GOJIPSAUITests.swift */,
-			);
-			name = GOJIPSAUITests;
-			path = Tests/GOJIPSAUITests;
-			sourceTree = "<group>";
-		};
 		48506AB010BFA2FAE81C7CB0 /* GOJIPSA */ = {
 			isa = PBXGroup;
 			children = (
@@ -84,7 +72,6 @@
 			children = (
 				48506AB010BFA2FAE81C7CB0 /* GOJIPSA */,
 				CB3DD14D39B5E0972B9F9DEA /* GOJIPSACore */,
-				2E263C974554FC1B2891B0ED /* GOJIPSAUITests */,
 				31A2026FD7C320B8032390DC /* Resources */,
 				DE27802FAE1A1406347177F5 /* Products */,
 			);
@@ -95,7 +82,12 @@
 			children = (
 				F1752D24CD3136F41658A078 /* Resources */,
 				ABDFB3E84175F7729B49EB07 /* AlarmPanel.swift */,
+				4801D6BE71852A7997365B0A /* CmuxClient.swift */,
+				F84DACDD21C1D76F6454B603 /* CmuxCommandRunner.swift */,
+				DB0049C43F87238DBC9FF587 /* CmuxConfiguration.swift */,
+				91A8C6F146675A9A41E7DC2F /* CmuxModels.swift */,
 				0DFD3FEBE4588C3405C64219 /* CmuxStatus.swift */,
+				A2BEBF978C09E8E80E90F953 /* CmuxTerminalContextProvider.swift */,
 				ABE7BAA61C7CB144E89D36D7 /* DangerDetector.swift */,
 				C61FBD76FDC4FA4C765DC106 /* GeminiClient.swift */,
 				CD5A424F953D61860AA9497C /* OverlayPanel.swift */,
@@ -112,7 +104,6 @@
 			isa = PBXGroup;
 			children = (
 				C69C58FC4D4A231863465F00 /* GOJIPSA.app */,
-				F2706B0C44DCF6D44D850D87 /* GOJIPSAUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -127,24 +118,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		38486392D2EBA27C409C208D /* GOJIPSAUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 7E2AD804CEA8F1CA81DDEC3C /* Build configuration list for PBXNativeTarget "GOJIPSAUITests" */;
-			buildPhases = (
-				8AF7C1C839AFB21C3283458B /* Sources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				57082E54017C4A1F776FDDDA /* PBXTargetDependency */,
-			);
-			name = GOJIPSAUITests;
-			packageProductDependencies = (
-			);
-			productName = GOJIPSAUITests;
-			productReference = F2706B0C44DCF6D44D850D87 /* GOJIPSAUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 		42400087503E79E0BF0E264C /* GOJIPSA */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 511C992EC97D47B8E5908722 /* Build configuration list for PBXNativeTarget "GOJIPSA" */;
@@ -174,11 +147,6 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					38486392D2EBA27C409C208D = {
-						DevelopmentTeam = 3BAL9BR86N;
-						ProvisioningStyle = Automatic;
-						TestTargetID = 42400087503E79E0BF0E264C;
-					};
 					42400087503E79E0BF0E264C = {
 						ProvisioningStyle = Automatic;
 					};
@@ -202,7 +170,6 @@
 			projectRoot = "";
 			targets = (
 				42400087503E79E0BF0E264C /* GOJIPSA */,
-				38486392D2EBA27C409C208D /* GOJIPSAUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -224,7 +191,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				EAE568EAD046D1F273CFECD9 /* AlarmPanel.swift in Sources */,
+				D801DD3CCCFC6D0A8879E575 /* CmuxClient.swift in Sources */,
+				A5B8832BED62487365E4B443 /* CmuxCommandRunner.swift in Sources */,
+				23D492711A65D2222B4B9EAB /* CmuxConfiguration.swift in Sources */,
+				21E7B7AC08D52D15380B3B46 /* CmuxModels.swift in Sources */,
 				1DE27C6BC30C04159222ACB3 /* CmuxStatus.swift in Sources */,
+				F15E62D72AE6D05C481A52E5 /* CmuxTerminalContextProvider.swift in Sources */,
 				54957A14003A3292AB7F7B6A /* DangerDetector.swift in Sources */,
 				9F9E35F33323F4F43E1EDC34 /* GeminiClient.swift in Sources */,
 				22BB88E7F74DF0491C33710A /* OverlayPanel.swift in Sources */,
@@ -236,23 +208,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		8AF7C1C839AFB21C3283458B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				228F0D1C4B6954E5283777AD /* GOJIPSAUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		57082E54017C4A1F776FDDDA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 42400087503E79E0BF0E264C /* GOJIPSA */;
-			targetProxy = ACB2CD6D93367E9316BA8379 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		064C98F544709045EC31DC3E /* Release */ = {
@@ -321,42 +277,6 @@
 				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
-		};
-		16263B15B91A034DD2F4B629 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = GOJIPSAUITests;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.gojipsa.GOJIPSAUITests;
-				SDKROOT = macosx;
-				TEST_TARGET_NAME = GOJIPSA;
-			};
-			name = Release;
-		};
-		6D2E9F5DDFB19ABEB666BC6C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = GOJIPSAUITests;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.gojipsa.GOJIPSAUITests;
-				SDKROOT = macosx;
-				TEST_TARGET_NAME = GOJIPSA;
-			};
-			name = Debug;
 		};
 		9E10D5AA54EF6982367D14A7 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -467,15 +387,6 @@
 			buildConfigurations = (
 				C29BD4ACD50ED5209F8D8E87 /* Debug */,
 				9E10D5AA54EF6982367D14A7 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		7E2AD804CEA8F1CA81DDEC3C /* Build configuration list for PBXNativeTarget "GOJIPSAUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				6D2E9F5DDFB19ABEB666BC6C /* Debug */,
-				16263B15B91A034DD2F4B629 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

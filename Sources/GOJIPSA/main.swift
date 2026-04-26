@@ -61,9 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // ─── Startup health check — surface cmux status visually so the user
         //     immediately knows if GOJIPSA can actually read their terminal.
-        //     Suppressed when running with any --demo-* flag (those are reserved
-        //     for UI tests / manual feature demos and shouldn't be polluted by
-        //     status overrides). ───
+        //     Suppressed when running with any --demo-* flag so manual feature demos
+        //     are not polluted by status overrides. ───
         let isDemoMode = cliArgs.contains(where: { $0.hasPrefix("--demo-") })
         if !isDemoMode {
             Task { @MainActor in
@@ -76,12 +75,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // ─── UI test / manual demo entry points ───
+        // ─── Manual demo entry points ───
         // Available in both debug and release so users can verify lottie mappings
         // visually with `GOJIPSA --demo-speak ... --emotion <name>`.
         let args = CommandLine.arguments
         if args.contains("--demo-overlay") {
-            panel.speak("🧪 UI test — overlay ready", emotion: .talking)
+            panel.speak("🧪 Demo — overlay ready", emotion: .talking)
             let dwellSec = parseDwellSeconds(args, default: 3)
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: UInt64(dwellSec) * 1_000_000_000)
@@ -160,9 +159,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if args.contains("--demo-alarm") {
             alarm.showAlarm(
-                pattern: "rm -rf /tmp/test-from-ui",
-                warning: "🛑 [UI test] 위험 감지!",
-                explanation: "이건 UI 테스트용 더미 alarm. 5초 후 자동 닫힘.",
+                pattern: "rm -rf /tmp/demo",
+                warning: "🛑 [Demo] 위험 감지!",
+                explanation: "이건 데모용 더미 alarm. 5초 후 자동 닫힘.",
                 dismissAfter: 4.0
             )
             let dwellSec = parseDwellSeconds(args, default: 5)

@@ -24,6 +24,9 @@ public enum CmuxStatus: String, Sendable, Equatable {
     /// Server didn't respond within the deadline.
     case timeout
 
+    /// Socket/auth is healthy, but no terminal surface can be read.
+    case contextUnavailable
+
     /// Some other error — message captured in `details`.
     case unknown
 
@@ -36,6 +39,8 @@ public enum CmuxStatus: String, Sendable, Equatable {
         case .accessDenied:     return "🔒 cmux 접근 거부됨 (cmux 안에서 실행 또는 password 설정 필요)"
         case .passwordRejected: return "🔒 cmux password 거부됨 — cmux Settings의 비밀번호와 일치하는지 확인"
         case .timeout:          return "⏱  cmux 응답 지연 (5초 초과)"
+        case .contextUnavailable:
+            return "⚠️  cmux 연결됨, 하지만 읽을 터미널 surface를 찾지 못함"
         case .unknown:          return "⚠️  cmux 상태 불명"
         }
     }

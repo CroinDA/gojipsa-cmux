@@ -38,19 +38,6 @@
             ReferencedContainer = "container:GOJIPSA.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
-      <Testables>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "38486392D2EBA27C409C208D"
-               BuildableName = "GOJIPSAUITests.xctest"
-               BlueprintName = "GOJIPSAUITests"
-               ReferencedContainer = "container:GOJIPSA.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-      </Testables>
       <CommandLineArguments>
       </CommandLineArguments>
    </TestAction>

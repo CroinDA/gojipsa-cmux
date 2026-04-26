@@ -3,7 +3,7 @@ import Lottie
 import Foundation
 
 /// Module-level helper exposing GOJIPSACore's resource bundle.
-/// Public so tests (SPM GOJIPSATests, XCTest) can locate bundled lottie assets.
+/// Public so app targets can locate bundled lottie assets across build systems.
 public let gojipsaCoreResourceBundle: Bundle = {
     #if SWIFT_PACKAGE
     return Bundle.module

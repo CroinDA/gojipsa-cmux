@@ -42,18 +42,12 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 
 | 시스템 | 사용처 |
 |--------|--------|
-| **Swift Package Manager** | 빠른 dev loop, 자체 테스트 러너 (XCTest-free) |
-| **Xcode project** | Release archive/signing, XCUIApplication UI 테스트, IDE 디버깅 |
+| **Swift Package Manager** | 빠른 dev loop, 로컬 빌드 |
+| **Xcode project** | Release archive/signing, IDE 디버깅 |
 
 ### 테스트
 
-| 종류 | 커버리지 |
-|------|----------|
-| 단위 (SPM 자체 러너) | DangerDetector regex (12 패턴), SecretRedactor (8 패턴), CmuxStatus 분류, ScreenWatcher 상수 |
-| 통합 | Gemini 라이브 호출 (analyze + explainDanger), cmux subprocess 호출 |
-| UI 자동화 (SPM) | CGWindowListCopyWindowInfo로 NSPanel 윈도우 검증 (권한 불필요) |
-| UI 자동화 (XCTest) | XCUIApplication 기반 — bubble 텍스트 매칭, emotion → lottie 검증, status bar |
-| **합계** | **107개 (SPM) + 12개 (XCTest) = 119/119 통과** |
+테스트 스위트는 재작성 예정입니다. 기존 SPM 자체 러너와 XCTest UI 테스트 타깃은 제거되었습니다.
 
 ### 보안
 
@@ -157,16 +151,6 @@ open GOJIPSA.xcodeproj
 
 # 배포용 .app + .dmg 생성은 Xcode Apple ID 계정 필요
 VERSION=2.0.4 SIGNING_MODE=xcode-auto ./scripts/release.sh
-```
-
-### 테스트 실행
-
-```bash
-# SPM 자체 러너 (Xcode 미설치도 OK) — 107개
-GEMINI_TEST_KEY=$(cat ~/.gojipsa/api-key.txt) swift run GOJIPSATests
-
-# XCTest UI 테스트 (Xcode 필요)
-xcodebuild -project GOJIPSA.xcodeproj -scheme GOJIPSA test
 ```
 
 ### 배포용 (Gatekeeper 통과)

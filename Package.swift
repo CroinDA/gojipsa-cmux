@@ -22,11 +22,6 @@ let package = Package(
             name: "GOJIPSA",
             dependencies: ["GOJIPSACore"],
             path: "Sources/GOJIPSA"
-        ),
-        .executableTarget(
-            name: "GOJIPSATests",
-            dependencies: ["GOJIPSACore"],
-            path: "Sources/GOJIPSATests"
         )
     ]
 )
