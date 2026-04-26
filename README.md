@@ -42,8 +42,8 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 
 | 시스템 | 사용처 |
 |--------|--------|
-| **Swift Package Manager** | 빠른 dev loop, 로컬 빌드 |
-| **Xcode project** | Release archive/signing, IDE 디버깅 |
+| **Xcode project** | canonical app build, archive, signing, notarization |
+| **Swift Package Manager** | 의존성/모듈 구조 보조, 빠른 컴파일 확인 |
 
 ### 테스트
 
@@ -142,15 +142,14 @@ open -a gojipsa
 git clone https://github.com/CroinDA/gojipsa-cmux.git
 cd gojipsa-cmux
 
-# SPM 빌드 (가장 빠름)
-swift build -c release
-.build/release/GOJIPSA
-
 # Xcode에서 열기
 open GOJIPSA.xcodeproj
 
+# Xcode project 기반 로컬 앱 빌드
+CONFIGURATION=Debug ./scripts/build-app.sh
+
 # 배포용 .app + .dmg 생성은 Xcode Apple ID 계정 필요
-VERSION=2.0.4 SIGNING_MODE=xcode-auto ./scripts/release.sh
+VERSION=2.0.4 BUILD_NUMBER=1 ./scripts/release.sh
 ```
 
 ### 배포용 (Gatekeeper 통과)
@@ -158,7 +157,7 @@ VERSION=2.0.4 SIGNING_MODE=xcode-auto ./scripts/release.sh
 Apple Developer Program 멤버는 [NOTARIZATION.md](NOTARIZATION.md) 참고:
 
 ```bash
-VERSION=2.0.4 SIGNING_MODE=xcode-auto ./scripts/release.sh
+VERSION=2.0.4 BUILD_NUMBER=1 ./scripts/release.sh
 ```
 
 ---

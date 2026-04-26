@@ -3,7 +3,7 @@
 set -euo pipefail
 
 VERSION="${VERSION:-2.0.4}"
-SHA256="${SHA256:-c3ff18a70c06b6ca66a6141266dd57080a107796a50de96b5bac5fa8b135365f}"
+SHA256="${SHA256:-}"
 REPO="${REPO:-CroinDA/gojipsa-cmux}"
 CASK_TOKEN="${CASK_TOKEN:-gojipsa}"
 APP_BUNDLE="${APP_BUNDLE:-GOJIPSA.app}"
@@ -17,11 +17,6 @@ FULL_CASK_TOKEN="$DEMO_TAP/$CASK_TOKEN"
 
 if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
     echo "ERROR: VERSION must be semver (got: '$VERSION')" >&2
-    exit 1
-fi
-
-if ! [[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]; then
-    echo "ERROR: SHA256 must be a lowercase 64-character SHA-256 digest." >&2
     exit 1
 fi
 
@@ -67,9 +62,20 @@ if [ "$USE_LOCAL_DMG" = "1" ]; then
         echo "ERROR: LOCAL_DMG does not exist: $LOCAL_DMG" >&2
         exit 1
     fi
+    SHA256="${SHA256:-$(shasum -a 256 "$LOCAL_DMG" | cut -d' ' -f1)}"
     URL="file://$LOCAL_DMG"
 else
+    if [ -z "$SHA256" ]; then
+        echo "ERROR: SHA256 is required for remote release validation." >&2
+        echo "       Use SHA256=<digest> or USE_LOCAL_DMG=1." >&2
+        exit 1
+    fi
     URL="https://github.com/$REPO/releases/download/v#{version}/GOJIPSA-#{version}.dmg"
+fi
+
+if ! [[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+    echo "ERROR: SHA256 must be a lowercase 64-character SHA-256 digest." >&2
+    exit 1
 fi
 
 echo "Creating temporary Homebrew tap:"

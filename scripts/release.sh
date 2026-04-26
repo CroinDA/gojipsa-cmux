@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# release.sh - Build, notarize, and optionally upload a GOJIPSA release.
+# Build a Xcode-managed GOJIPSA release and optionally upload it to GitHub.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-2.0.4}"
-SIGNING_MODE="${SIGNING_MODE:-manual}"
 APP_NAME="GOJIPSA"
+VERSION="${VERSION:-2.0.4}"
+BUILD_NUMBER="${BUILD_NUMBER:-1}"
+REPO="${GITHUB_REPOSITORY:-CroinDA/gojipsa-cmux}"
+TAG="v$VERSION"
 DMG_PATH="$PROJECT_DIR/dist/$APP_NAME-$VERSION.dmg"
 APP_DIR="$PROJECT_DIR/dist/$APP_NAME.app"
-TAG="v$VERSION"
-REPO="${GITHUB_REPOSITORY:-CroinDA/gojipsa-cmux}"
 
 fail() {
     echo "ERROR: $*" >&2
@@ -22,44 +22,23 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
     fail "VERSION must be semver (got: '$VERSION')"
 fi
 
-if [ "$SIGNING_MODE" != "manual" ] && [ "$SIGNING_MODE" != "xcode-auto" ]; then
-    fail "SIGNING_MODE must be 'manual' or 'xcode-auto' (got: '$SIGNING_MODE')"
-fi
-
-if [ "$SIGNING_MODE" = "manual" ]; then
-    : "${SIGN_ID:?SIGN_ID is required, e.g. Developer ID Application: NAME (TEAMID)}"
-    : "${NOTARY_PROFILE:?NOTARY_PROFILE is required, e.g. AC_NOTARY}"
-    export SIGN_ID NOTARY_PROFILE
-fi
-
-export VERSION SIGNING_MODE
-
-./scripts/build-app.sh
+export VERSION BUILD_NUMBER
+ACTION=archive NOTARIZE=1 ./scripts/build-app.sh
 ./scripts/build-dmg.sh
 
-if [ "$SIGNING_MODE" = "manual" ]; then
-    ./scripts/notarize.sh
+echo "Validating notarized app..."
+xcrun stapler validate "$APP_DIR"
+spctl -a -vv -t exec "$APP_DIR"
+
+echo "Checking DMG Gatekeeper assessment..."
+if xcrun stapler staple "$DMG_PATH" >/dev/null 2>&1; then
+    xcrun stapler validate "$DMG_PATH"
 else
-    echo ""
-    echo "Validating Xcode-notarized app..."
-    xcrun stapler validate "$APP_DIR"
-    spctl -a -vv -t exec "$APP_DIR"
-
-    echo ""
-    echo "Checking DMG Gatekeeper assessment..."
-    if xcrun stapler staple "$DMG_PATH" >/dev/null 2>&1; then
-        xcrun stapler validate "$DMG_PATH"
-    else
-        echo "DMG stapling skipped: Xcode automatic notarization exports a stapled app, not a new DMG ticket."
-        echo "The DMG remains Developer ID signed; the installed app is the notarized Gatekeeper target."
-    fi
-    spctl -a -vv -t open --context context:primary-signature "$DMG_PATH" || true
+    echo "DMG stapling skipped; the contained app is the notarized Gatekeeper target."
 fi
+spctl -a -vv -t open --context context:primary-signature "$DMG_PATH" || true
 
-if [ ! -f "$DMG_PATH" ]; then
-    fail "Expected release DMG at $DMG_PATH"
-fi
-
+[ -f "$DMG_PATH" ] || fail "Expected release DMG at $DMG_PATH"
 SHA256="$(shasum -a 256 "$DMG_PATH" | cut -d' ' -f1)"
 
 echo ""
