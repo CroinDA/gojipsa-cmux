@@ -6,6 +6,7 @@ await runSmokeTests()
 await runDangerDetectorTests()
 await runSecretRedactorTests()
 await runScreenWatcherTests()
+await runCmuxStatusTests()
 await runGeminiClientTests()
 await runUITests()
 

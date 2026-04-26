@@ -178,35 +178,112 @@ public actor ScreenWatcher {
         return uniq
     }
 
-    private func runCmux(args: [String]) async -> String? {
-        await withCheckedContinuation { (cont: CheckedContinuation<String?, Never>) in
+    /// Detailed result of a cmux subprocess invocation.
+    private struct CmuxRunResult: Sendable {
+        let exitCode: Int32?      // nil if launch failed before exec
+        let stdout: String
+        let stderr: String
+        let timedOut: Bool
+    }
+
+    /// Hardened: catches launch errors, reads stderr, applies a 5s timeout.
+    /// Public consumers still get `String?` via the convenience wrapper below.
+    private func runCmuxDetailed(args: [String], timeout: TimeInterval = 5.0) async -> CmuxRunResult {
+        await withCheckedContinuation { (cont: CheckedContinuation<CmuxRunResult, Never>) in
             let proc = Process()
             proc.executableURL = URL(fileURLWithPath: cmuxPath)
             proc.arguments = args
-            // Pass cmux socket password if set — enables 1-pane workflow
-            // (Sentinel can run outside cmux process tree)
             if !cmuxPassword.isEmpty {
                 var env = ProcessInfo.processInfo.environment
                 env["CMUX_SOCKET_PASSWORD"] = cmuxPassword
                 proc.environment = env
             }
-            let pipe = Pipe()
-            proc.standardOutput = pipe
-            proc.standardError = Pipe()
+            let outPipe = Pipe(), errPipe = Pipe()
+            proc.standardOutput = outPipe
+            proc.standardError = errPipe
 
-            do { try proc.run() } catch {
-                cont.resume(returning: nil); return
+            do {
+                try proc.run()
+            } catch {
+                cont.resume(returning: CmuxRunResult(
+                    exitCode: nil,
+                    stdout: "",
+                    stderr: "Process.run failed: \(error.localizedDescription)",
+                    timedOut: false
+                ))
+                return
             }
-            DispatchQueue.global().async {
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                proc.waitUntilExit()
-                if proc.terminationStatus == 0 {
-                    cont.resume(returning: String(data: data, encoding: .utf8))
-                } else {
-                    cont.resume(returning: nil)
+
+            // Timeout watchdog — terminate if cmux hangs
+            let timedOut = ManagedFlag()
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+                if proc.isRunning {
+                    timedOut.set()
+                    proc.terminate()
                 }
             }
+
+            DispatchQueue.global().async {
+                let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+                let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+                proc.waitUntilExit()
+                cont.resume(returning: CmuxRunResult(
+                    exitCode: proc.terminationStatus,
+                    stdout: String(data: outData, encoding: .utf8) ?? "",
+                    stderr: String(data: errData, encoding: .utf8) ?? "",
+                    timedOut: timedOut.isSet
+                ))
+            }
         }
+    }
+
+    /// Backwards-compatible wrapper — returns nil on any non-zero exit.
+    private func runCmux(args: [String]) async -> String? {
+        let result = await runCmuxDetailed(args: args)
+        return result.exitCode == 0 ? result.stdout : nil
+    }
+
+    /// Quick status check — typically sub-second when cmux is healthy.
+    /// Distinguishes between binary missing, server down, access denied,
+    /// password rejected, timeout, and unknown.
+    public func checkStatus() async -> CmuxStatusReport {
+        if cmuxPath.isEmpty {
+            return CmuxStatusReport(status: .binaryNotFound,
+                                    details: "cmux not found in /Applications, /opt/homebrew/bin, /usr/local/bin, or PATH",
+                                    cmuxPath: "",
+                                    usingPassword: false)
+        }
+        let result = await runCmuxDetailed(args: ["ping"], timeout: 3.0)
+        let status: CmuxStatus = result.timedOut
+            ? .timeout
+            : CmuxStatusClassifier.classify(exitCode: result.exitCode,
+                                            stdout: result.stdout,
+                                            stderr: result.stderr)
+        let details = result.timedOut
+            ? "ping timed out after 3s"
+            : (result.stderr.isEmpty ? result.stdout : result.stderr)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        return CmuxStatusReport(
+            status: status,
+            details: String(details.prefix(200)),
+            cmuxPath: cmuxPath,
+            usingPassword: !cmuxPassword.isEmpty
+        )
+    }
+
+    /// Static convenience: lets `--status` flag in main.swift run a check
+    /// without constructing a full ScreenWatcher (no callbacks needed).
+    public static func quickStatus() async -> CmuxStatusReport {
+        let path = locateCmux()
+        let password = loadCmuxPassword()
+        // Use a temporary lightweight watcher instance just for the check
+        let temp = ScreenWatcher(
+            apiKey: "",
+            onComment: { _ in },
+            onAlarm: { _ in }
+        )
+        _ = path; _ = password   // suppress unused warnings (loaded inside init)
+        return await temp.checkStatus()
     }
 
     private static func locateCmux() -> String {
@@ -234,4 +311,12 @@ public actor ScreenWatcher {
             return ""
         }
     }
+}
+
+/// Tiny thread-safe boolean — used by the cmux subprocess timeout watchdog.
+private final class ManagedFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+    func set() { lock.lock(); value = true; lock.unlock() }
+    var isSet: Bool { lock.lock(); defer { lock.unlock() }; return value }
 }

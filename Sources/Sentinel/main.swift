@@ -17,11 +17,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(Data("⚠️  GEMINI_API_KEY missing. Set env var or write to ~/.sentinel/api-key.txt\n".utf8))
         }
 
+        // ─── --status: print cmux connection state and exit (CLI tool mode) ───
+        let cliArgs = CommandLine.arguments
+        if cliArgs.contains("--status") {
+            Task { @MainActor in
+                let report = await ScreenWatcher.quickStatus()
+                let line = """
+                cmux status: \(report.status.rawValue)
+                summary:     \(report.status.summary)
+                cmuxPath:    \(report.cmuxPath.isEmpty ? "(not found)" : report.cmuxPath)
+                password:    \(report.usingPassword ? "yes" : "no")
+                details:     \(report.details.isEmpty ? "(none)" : report.details)
+
+                """
+                FileHandle.standardOutput.write(Data(line.utf8))
+                exit(report.status == .connected ? 0 : 2)
+            }
+            return
+        }
+
         panel = OverlayPanel()
         panel.show()
         panel.speak("👀 Sentinel awake. Watching your shell...", emotion: .idle)
 
         alarm = AlarmPanel()
+
+        // ─── Startup health check — surface cmux status visually so the user
+        //     immediately knows if Sentinel can actually read their terminal ───
+        Task { @MainActor in
+            let report = await ScreenWatcher.quickStatus()
+            if report.status != .connected {
+                self.panel.speak(report.status.summary,
+                                 emotion: report.status == .accessDenied ? .alarmed : .nagging,
+                                 autoHide: 12.0)
+            }
+        }
 
         // ─── UI test entry points (DEBUG builds only) ───
         // Stripped from `swift build -c release` so end-users can't trigger fake alarms.
@@ -36,6 +66,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // --demo-speak <text> — show bubble with exact text, default idle emotion
+        if let idx = args.firstIndex(of: "--demo-speak"), idx + 1 < args.count {
+            let text = args[idx + 1]
+            // Optional emotion: --demo-speak <text> --emotion <name>
+            var emotion: Emotion = .talking
+            if let eIdx = args.firstIndex(of: "--emotion"), eIdx + 1 < args.count,
+               let parsed = Emotion(rawValue: args[eIdx + 1]) ??
+                            Emotion.fromName(args[eIdx + 1]) {
+                emotion = parsed
+            }
+            panel.speak(text, emotion: emotion, autoHide: 60.0)  // long autoHide for inspection
+            let dwellSec = parseDwellSeconds(args, default: 5)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(dwellSec) * 1_000_000_000)
+                exit(0)
+            }
+            return
+        }
+
+        // --demo-speak-multi — call speak() three times in a row to verify text updates
+        if args.contains("--demo-speak-multi") {
+            panel.speak("First message", emotion: .idle, autoHide: 60.0)
+            let dwellSec = parseDwellSeconds(args, default: 6)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                self.panel.speak("Second message", emotion: .talking, autoHide: 60.0)
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                self.panel.speak("Final message at the end", emotion: .celebrating, autoHide: 60.0)
+                try? await Task.sleep(nanoseconds: UInt64(dwellSec - 2) * 1_000_000_000)
+                exit(0)
+            }
+            return
+        }
+
+        // --demo-gemini-explain — fires explainDanger live, shows result in bubble
+        if args.contains("--demo-gemini-explain") {
+            let dwellSec = parseDwellSeconds(args, default: 12)
+            panel.speak("🤖 Gemini explain 호출중...", emotion: .talking, autoHide: 60.0)
+            let client = GeminiClient(apiKey: apiKey)
+            Task { @MainActor in
+                let explanation = await client.explainDanger(command: "rm -rf /var/log")
+                if let exp = explanation, !exp.isEmpty {
+                    self.panel.speak(exp, emotion: .alarmed, autoHide: 60.0)
+                } else {
+                    self.panel.speak("❌ Gemini 응답 실패 (network/key 이슈)", emotion: .nagging, autoHide: 60.0)
+                }
+                try? await Task.sleep(nanoseconds: UInt64(dwellSec) * 1_000_000_000)
+                exit(0)
+            }
+            return
+        }
+
         if args.contains("--demo-alarm") {
             alarm.showAlarm(
                 pattern: "rm -rf /tmp/test-from-ui",

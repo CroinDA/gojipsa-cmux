@@ -112,6 +112,32 @@ func runUITests() async {
         }
     }
 
+    await runSuite("UI — bubble: --demo-speak shows overlay window") {
+        // Custom runner can't read NSTextField text content (no AX permission)
+        // — but we can verify the overlay window appears when --demo-speak fires.
+        guard let proc = launchSentinel(["--demo-speak", "smoke-text", "--dwell", "5"]) else {
+            await assert(false, "could not launch Sentinel"); return
+        }
+        defer { proc.terminate() }
+        var found: [WindowInfo] = []
+        for _ in 0..<15 {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            found = windows(ownedBy: "Sentinel")
+            if !found.isEmpty { break }
+        }
+        await assert(!found.isEmpty, "bubble overlay should appear within 3s of --demo-speak")
+    }
+
+    await runSuite("UI — bubble: --demo-speak-multi runs 3 updates without crash") {
+        guard let proc = launchSentinel(["--demo-speak-multi", "--dwell", "6"]) else {
+            await assert(false, "could not launch Sentinel"); return
+        }
+        defer { proc.terminate() }
+        // App should stay alive through all 3 speak() invocations
+        try? await Task.sleep(nanoseconds: 4_500_000_000)  // 4.5s — past 2nd update
+        await assert(proc.isRunning, "Sentinel should survive multiple speak() calls without crashing")
+    }
+
     await runSuite("UI — process self-exits after dwell expires") {
         guard let proc = launchSentinel(["--demo-overlay", "--dwell", "2"]) else {
             await assert(false, "could not launch Sentinel"); return

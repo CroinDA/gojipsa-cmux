@@ -8,6 +8,20 @@ public enum Emotion: String, Sendable {
     case celebrating = "🥳"
     case nagging = "😤"
 
+    /// Resolve a state name (e.g. "talking", "alarmed") to an Emotion.
+    /// Returns nil for unknown names.
+    public static func fromName(_ name: String) -> Emotion? {
+        switch name.lowercased() {
+        case "idle": return .idle
+        case "talking": return .talking
+        case "alarmed": return .alarmed
+        case "sleeping": return .sleeping
+        case "celebrating": return .celebrating
+        case "nagging": return .nagging
+        default: return nil
+        }
+    }
+
     public var bubbleColor: NSColor {
         switch self {
         case .alarmed: return NSColor.systemRed.withAlphaComponent(0.92)
