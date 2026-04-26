@@ -152,6 +152,16 @@ public final class OverlayPanel {
         resizeBubbleToFit(text: text)
     }
 
+    /// Speak with an explicit lottie override — Gemini-chosen animation takes priority.
+    public func speak(_ comment: Comment) {
+        let lottieName = comment.lottie ?? comment.emotion.lottieName
+        applyLottie(named: lottieName)
+        bubbleLabel.stringValue = comment.text
+        bubbleContainer.layer?.backgroundColor = comment.emotion.bubbleColor.cgColor
+        lottieView.setAccessibilityLabel("GOJIPSA butler — \(comment.emotion.rawValue)")
+        resizeBubbleToFit(text: comment.text)
+    }
+
     /// Compute the bubble height needed to show `text` in full, then resize
     /// bubbleContainer + the panel + repositions the lottie view accordingly.
     private func resizeBubbleToFit(text: String) {

@@ -151,7 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             apiKey: apiKey,
             onComment: { [weak self] comment in
                 Task { @MainActor in
-                    self?.panel.speak(comment.text, emotion: comment.emotion)
+                    self?.panel.speak(comment)
                 }
             },
             onAlarm: { [weak self] alarmEvent in
