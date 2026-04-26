@@ -1,6 +1,8 @@
 import AppKit
 import Foundation
+#if SWIFT_PACKAGE
 import SentinelCore
+#endif
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -20,6 +22,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.speak("👀 Sentinel awake. Watching your shell...", emotion: .idle)
 
         alarm = AlarmPanel()
+
+        // ─── UI test entry points (DEBUG builds only) ───
+        // Stripped from `swift build -c release` so end-users can't trigger fake alarms.
+#if DEBUG
+        let args = CommandLine.arguments
+        if args.contains("--demo-overlay") {
+            panel.speak("🧪 UI test — overlay ready", emotion: .talking)
+            let dwellSec = parseDwellSeconds(args, default: 3)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(dwellSec) * 1_000_000_000)
+                exit(0)
+            }
+            return
+        }
+        if args.contains("--demo-alarm") {
+            alarm.showAlarm(
+                pattern: "rm -rf /tmp/test-from-ui",
+                warning: "🛑 [UI test] 위험 감지!",
+                explanation: "이건 UI 테스트용 더미 alarm. 5초 후 자동 닫힘.",
+                dismissAfter: 4.0
+            )
+            let dwellSec = parseDwellSeconds(args, default: 5)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(dwellSec) * 1_000_000_000)
+                exit(0)
+            }
+            return
+        }
+#endif
 
         watcher = ScreenWatcher(
             apiKey: apiKey,
@@ -50,6 +81,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ note: Notification) {
         watchTask?.cancel()
+    }
+
+    private func parseDwellSeconds(_ args: [String], default fallback: Int) -> Int {
+        // Looks for --dwell <N>
+        if let idx = args.firstIndex(of: "--dwell"),
+           idx + 1 < args.count,
+           let n = Int(args[idx + 1]),
+           (1...60).contains(n) {
+            return n
+        }
+        return fallback
     }
 
     private func loadApiKey() -> String {

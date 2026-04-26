@@ -70,6 +70,10 @@ Swift macOS app (.app bundle)
 
 ### Option B — Build from source (개발자)
 
+두 빌드 시스템 동시 지원:
+- **SPM** (`Package.swift`) — 빠른 dev loop, XCTest-free 자체 테스트 러너 (Xcode 없이도 OK)
+- **Xcode** (`project.yml` → XcodeGen → `Sentinel.xcodeproj`) — XCTest UI 테스트, IDE 디버깅
+
 ```bash
 git clone https://github.com/CroinDA/sentinel-cmux.git
 cd sentinel-cmux
@@ -87,15 +91,50 @@ swift build -c release
 
 ### 테스트 실행
 
-XCTest-free 테스트 러너 (Xcode 미설치 머신에서도 동작). DangerDetector/SecretRedactor 단위 테스트 + 스모크 테스트 + Gemini 라이브 통합 테스트:
+XCTest-free 테스트 러너 (Xcode 미설치 머신에서도 동작):
+- **Smoke**: 앱 바이너리/cmux/API 키 점검
+- **Unit**: DangerDetector(20+), SecretRedactor(15+), ScreenWatcher 상수
+- **Integration**: Gemini 라이브 호출 (analyze + explainDanger)
+- **UI 자동화**: Sentinel 바이너리 launch → CGWindowListCopyWindowInfo로 NSPanel 윈도우 검증 → cleanup
 
 ```bash
-# 라이브 통합 테스트 포함
+# 전체 (라이브 통합 + UI 자동화 포함)
 GEMINI_TEST_KEY=$(cat ~/.sentinel/api-key.txt) swift run SentinelTests
 
-# 통합 테스트 스킵 (단위 테스트만)
+# Gemini 통합만 스킵
 swift run SentinelTests
 ```
+
+#### UI 자동화 테스트 (`Sources/SentinelTests/UITests.swift`)
+
+`--demo-overlay` / `--demo-alarm` 플래그로 Sentinel 바이너리를 직접 launch한 뒤 시스템 윈도우 메타데이터를 검사. **CGWindowListCopyWindowInfo는 권한 불필요** — 화면 녹화/Accessibility 권한 안 받아도 됨.
+
+기능 추가 시 UI 테스트 추가 패턴:
+1. `main.swift`에 `--demo-<feature>` 플래그 추가 (기능을 즉시 띄우고 dwell 후 exit)
+2. `UITests.swift`에 `runSuite("UI — <feature> ...")` 블록 추가
+3. `swift run SentinelTests` — 자동 포함됨
+
+#### XCTest UI 테스트 (Xcode 사용자용)
+
+`Tests/SentinelUITests/` 정식 testTarget — XCUIApplication 기반. Xcode 설치 + 첫 실행 시 Accessibility 권한 다이얼로그 한 번만 허용하면 자동화 가능.
+
+```bash
+# 1. xcodegen으로 .xcodeproj 생성 (한 번만)
+brew install xcodegen
+xcodegen generate
+
+# 2. Xcode에서 열기
+open Sentinel.xcodeproj
+
+# 3. 또는 CLI로 빌드/테스트
+xcodebuild -project Sentinel.xcodeproj -scheme Sentinel build
+xcodebuild -project Sentinel.xcodeproj -scheme Sentinel test
+```
+
+UI 테스트 첫 실행 시:
+1. SentinelUITests-Runner.app이 Accessibility 권한 요청
+2. **System Settings → Privacy & Security → Accessibility** 에서 허용
+3. 이후 자동 실행
 
 ### 배포용 빌드 (노타라이즈)
 

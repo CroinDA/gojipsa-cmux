@@ -1,0 +1,77 @@
+name: Sentinel
+
+options:
+  bundleIdPrefix: dev.croinda
+  deploymentTarget:
+    macOS: "13.0"
+  developmentLanguage: en
+  generateEmptyDirectories: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.2.1"
+    CURRENT_PROJECT_VERSION: "1"
+    PRODUCT_BUNDLE_IDENTIFIER: dev.croinda.$(PRODUCT_NAME:rfc1034identifier)
+    DEVELOPMENT_TEAM: 3BAL9BR86N
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+
+  # ─── Sentinel (.app) — bundles both Sentinel and SentinelCore sources ───
+  # (SPM keeps them as separate targets via Package.swift; xcodebuild merges them
+  #  into a single .app to avoid embedded-framework codesign edge cases.)
+  Sentinel:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Sentinel
+      - path: Sources/SentinelCore
+    info:
+      path: Info-Sentinel.plist
+      properties:
+        CFBundleName: Sentinel
+        CFBundleDisplayName: Sentinel for cmux
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundlePackageType: APPL
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        NSHumanReadableCopyright: "Built at CMUX × AIM Hackathon Seoul 2026"
+
+  # ─── SentinelUITests (XCTest UI tests via XCUIApplication) ───
+  SentinelUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: Tests/SentinelUITests
+    dependencies:
+      - target: Sentinel
+    settings:
+      base:
+        TEST_TARGET_NAME: Sentinel
+        PRODUCT_BUNDLE_IDENTIFIER: dev.croinda.SentinelUITests
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: SentinelUITests
+
+schemes:
+  Sentinel:
+    build:
+      targets:
+        Sentinel: all
+    run:
+      config: Debug
+      executable: Sentinel
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - SentinelUITests
+      buildImplicitDependencies: true
+    archive:
+      config: Release

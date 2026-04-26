@@ -7,6 +7,7 @@ await runDangerDetectorTests()
 await runSecretRedactorTests()
 await runScreenWatcherTests()
 await runGeminiClientTests()
+await runUITests()
 
 await printSummary()
 

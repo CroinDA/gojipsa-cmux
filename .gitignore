@@ -6,6 +6,14 @@ Package.resolved
 
 # Build artifacts
 dist/
+build/
+
+# XcodeGen output — regenerated from project.yml, no need to track
+Sentinel.xcodeproj/
+
+# Xcode user-specific
+*.xcuserstate
+DerivedData/
 *.xcodeproj
 DerivedData/
 
