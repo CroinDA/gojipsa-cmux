@@ -15,13 +15,13 @@ One-time setup:
 Release:
 
 ```bash
-VERSION=2.0.1 SIGNING_MODE=xcode-auto ./scripts/release.sh
+VERSION=2.0.2 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 성공하면:
 
 - `dist/GOJIPSA.app`: Developer ID Application 서명 + Hardened Runtime + stapled notarization ticket
-- `dist/GOJIPSA-2.0.1.dmg`: Homebrew cask 배포용 DMG
+- `dist/GOJIPSA-2.0.2.dmg`: Homebrew cask 배포용 DMG
 
 ## Xcode Automatic Flow
 
@@ -59,7 +59,7 @@ DMG 자체도 `spctl -t open`에서 `Notarized Developer ID`를 받아야 하는
 로컬 Developer ID Application identity와 `notarytool` profile을 쓰는 기존 수동 경로도 유지된다.
 
 ```bash
-VERSION=2.0.1 \
+VERSION=2.0.2 \
 SIGN_ID="Developer ID Application: NAME (TEAMID)" \
 NOTARY_PROFILE="AC_NOTARY" \
 ./scripts/release.sh
@@ -70,6 +70,25 @@ NOTARY_PROFILE="AC_NOTARY" \
 ## Homebrew Cask
 
 release script가 출력한 SHA256을 tap repo의 `Casks/gojipsa.rb`에 반영한다.
+
+v2.0.2 값으로 로컬 cask를 생성하고 fetch/install/Gatekeeper 검증까지 시연하려면:
+
+```bash
+./scripts/demo-homebrew-cask.sh
+```
+
+fetch/audit까지만 확인하려면:
+
+```bash
+RUN_INSTALL=0 ./scripts/demo-homebrew-cask.sh
+```
+
+v2.0.2 tap repo 갱신값:
+
+```ruby
+version "2.0.2"
+sha256 "588739e8f8ae190674ddba03fc24070b951003d7b6e918b8cba67f4399a85508"
+```
 
 ```bash
 brew style Casks/gojipsa.rb
@@ -91,7 +110,7 @@ codesign -dv --verbose=4 /Applications/GOJIPSA.app 2>&1 | grep "Authority\\|Team
 spctl -a -vv -t exec /Applications/GOJIPSA.app
 ```
 
-`source=Notarized Developer ID`가 아니면 `VERSION=2.0.1 SIGNING_MODE=xcode-auto ./scripts/release.sh`로 다시 만든 artifact만 GitHub Release와 Homebrew cask에 반영한다.
+`source=Notarized Developer ID`가 아니면 `VERSION=2.0.2 SIGNING_MODE=xcode-auto ./scripts/release.sh`로 다시 만든 artifact만 GitHub Release와 Homebrew cask에 반영한다.
 
 ### Xcode account/session 문제
 

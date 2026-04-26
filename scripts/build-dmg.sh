@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-2.0.1}"
+VERSION="${VERSION:-2.0.2}"
 SIGNING_MODE="${SIGNING_MODE:-manual}"
 APP_NAME="GOJIPSA"
 DIST_DIR="$PROJECT_DIR/dist"
