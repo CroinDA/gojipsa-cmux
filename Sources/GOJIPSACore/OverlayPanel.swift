@@ -38,10 +38,10 @@ public enum Emotion: String, Sendable {
         switch self {
         case .idle:           return "note_taking"
         case .talking:        return "Checking"
-        case .celebrating:    return "dancing"
-        case .nagging:        return "nodding_sighingly"
+        case .celebrating:    return "happy"
+        case .nagging:        return "nagging"
         case .alarmed:        return "frightening"
-        case .sleeping:       return "note_taking"  // TEMP until sleep lottie ships
+        case .sleeping:       return "sleepy"
         }
     }
 

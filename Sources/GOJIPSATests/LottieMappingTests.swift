@@ -5,16 +5,16 @@ func runLottieMappingTests() async {
     await runSuite("Lottie — Emotion.lottieName mapping (every emotion has a lottie)") {
         await assertEqual(Emotion.idle.lottieName, "note_taking", "idle → note_taking")
         await assertEqual(Emotion.talking.lottieName, "Checking", "talking → Checking")
-        await assertEqual(Emotion.celebrating.lottieName, "dancing", "celebrating → dancing")
-        await assertEqual(Emotion.nagging.lottieName, "nodding_sighingly", "nagging → nodding_sighingly")
+        await assertEqual(Emotion.celebrating.lottieName, "happy", "celebrating → happy")
+        await assertEqual(Emotion.nagging.lottieName, "nagging", "nagging → nagging")
         await assertEqual(Emotion.alarmed.lottieName, "frightening", "alarmed → frightening")
-        await assertEqual(Emotion.sleeping.lottieName, "note_taking", "sleeping → note_taking (TEMP until sleep lottie ships)")
+        await assertEqual(Emotion.sleeping.lottieName, "sleepy", "sleeping → sleepy")
     }
 
     await runSuite("Lottie — bundle resources present") {
         // SPM build copies Resources/lottie/ → Bundle.module.bundleURL/lottie/
         let bundle = gojipsaCoreResourceBundle
-        let names = ["dancing", "note_taking", "nodding_sighingly", "Checking", "frightening"]
+        let names = ["note_taking", "Checking", "happy", "nagging", "frightening", "sleepy"]
         for name in names {
             let url = bundle.url(forResource: name, withExtension: "lottie", subdirectory: "lottie")
                 ?? bundle.url(forResource: name, withExtension: "lottie")
