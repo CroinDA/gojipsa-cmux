@@ -43,19 +43,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alarm = AlarmPanel()
 
         // ─── Startup health check — surface cmux status visually so the user
-        //     immediately knows if Sentinel can actually read their terminal ───
-        Task { @MainActor in
-            let report = await ScreenWatcher.quickStatus()
-            if report.status != .connected {
-                self.panel.speak(report.status.summary,
-                                 emotion: report.status == .accessDenied ? .alarmed : .nagging,
-                                 autoHide: 12.0)
+        //     immediately knows if Sentinel can actually read their terminal.
+        //     Suppressed when running with any --demo-* flag (those are reserved
+        //     for UI tests / manual feature demos and shouldn't be polluted by
+        //     status overrides). ───
+        let isDemoMode = cliArgs.contains(where: { $0.hasPrefix("--demo-") })
+        if !isDemoMode {
+            Task { @MainActor in
+                let report = await ScreenWatcher.quickStatus()
+                if report.status != .connected {
+                    self.panel.speak(report.status.summary,
+                                     emotion: report.status == .accessDenied ? .alarmed : .nagging,
+                                     autoHide: 12.0)
+                }
             }
         }
 
-        // ─── UI test entry points (DEBUG builds only) ───
-        // Stripped from `swift build -c release` so end-users can't trigger fake alarms.
-#if DEBUG
+        // ─── UI test / manual demo entry points ───
+        // Available in both debug and release so users can verify lottie mappings
+        // visually with `Sentinel --demo-speak ... --emotion <name>`.
         let args = CommandLine.arguments
         if args.contains("--demo-overlay") {
             panel.speak("🧪 UI test — overlay ready", emotion: .talking)
@@ -132,7 +138,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
-#endif
 
         watcher = ScreenWatcher(
             apiKey: apiKey,

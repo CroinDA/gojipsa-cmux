@@ -34,6 +34,20 @@ mkdir -p "$APP_DIR/Contents/Resources"
 cp ".build/release/$APP_NAME" "$APP_DIR/Contents/MacOS/$APP_NAME"
 chmod +x "$APP_DIR/Contents/MacOS/$APP_NAME"
 
+# Copy SPM-generated resource bundles (lottie assets, etc.) so the runtime can
+# locate Bundle.module-sourced files. Without this the lottie animations would
+# be missing from the .app and the butler wouldn't render.
+SPM_RELEASE_DIR=".build/arm64-apple-macosx/release"
+if [ ! -d "$SPM_RELEASE_DIR" ]; then
+    SPM_RELEASE_DIR=".build/release"  # SPM legacy layout
+fi
+for bundle in "$SPM_RELEASE_DIR"/*.bundle; do
+    if [ -d "$bundle" ]; then
+        echo "  Embedding bundle: $(basename "$bundle")"
+        cp -R "$bundle" "$APP_DIR/Contents/Resources/"
+    fi
+done
+
 # PkgInfo
 printf 'APPL????' > "$APP_DIR/Contents/PkgInfo"
 

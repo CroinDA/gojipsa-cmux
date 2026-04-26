@@ -120,34 +120,30 @@ final class SentinelUITests: XCTestCase {
                       "bubble should display the exact text passed to speak()")
     }
 
-    func testBubble_emotionUpdatesCharacterEmoji() throws {
-        // Use celebrating emotion → character should show 🥳.
-        // NOTE: avoid apostrophes — XCUI launchArguments shell-quoting breaks on '.
+    func testBubble_emotionLottiesLaunchWithoutCrashing() throws {
+        // After removing the emoji label, the character is rendered by Lottie only.
+        // XCUITest can't introspect Lottie animation content, so we verify the app
+        // boots cleanly with each emotion (bubble text is queryable; if app crashed
+        // mid-startup the staticTexts would be empty).
         let app = makeApp(args: [
             "--demo-speak", "Lets party time", "--emotion", "celebrating", "--dwell", "5"
         ])
         app.launch()
-
-        XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 3))
-
-        let allTexts = app.staticTexts.allElementsBoundByIndex.compactMap { e -> String? in
-            return e.value as? String ?? e.label
-        }
-        let hasEmoji = allTexts.contains(where: { $0.contains("🥳") })
-        XCTAssertTrue(hasEmoji,
-                      "celebrating emotion should render 🥳 — found: \(allTexts)")
+        XCTAssertTrue(app.staticTexts.firstMatch.waitForExistence(timeout: 3),
+                      "app should boot and show bubble text under celebrating emotion")
+        XCTAssertNotEqual(app.state, .notRunning,
+                          "app must stay alive after Lottie load")
     }
 
-    func testBubble_alarmedEmotionShowsCorrectEmoji() throws {
+    func testBubble_alarmedEmotionLaunchesCleanly() throws {
         let app = makeApp(args: [
             "--demo-speak", "Watch out!", "--emotion", "alarmed", "--dwell", "5"
         ])
         app.launch()
-
-        let emoji = app.staticTexts.containing(
-            NSPredicate(format: "value CONTAINS '😱'")).firstMatch
-        XCTAssertTrue(emoji.waitForExistence(timeout: 3),
-                      "alarmed emotion should render 😱 character emoji")
+        let bubble = app.staticTexts.containing(
+            NSPredicate(format: "value CONTAINS 'Watch out!'")).firstMatch
+        XCTAssertTrue(bubble.waitForExistence(timeout: 3),
+                      "alarmed emotion should still surface the spoken text in the bubble")
     }
 
     func testBubble_multipleSpeaksUpdatesText() throws {

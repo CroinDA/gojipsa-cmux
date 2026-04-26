@@ -2,13 +2,13 @@ import Foundation
 import SentinelCore
 
 func runLottieMappingTests() async {
-    await runSuite("Lottie — Emotion.lottieName mapping") {
+    await runSuite("Lottie — Emotion.lottieName mapping (every emotion has a lottie)") {
         await assertEqual(Emotion.idle.lottieName, "note_taking", "idle → note_taking")
         await assertEqual(Emotion.talking.lottieName, "Checking", "talking → Checking")
         await assertEqual(Emotion.celebrating.lottieName, "dancing", "celebrating → dancing")
         await assertEqual(Emotion.nagging.lottieName, "nodding_sighingly", "nagging → nodding_sighingly")
         await assertEqual(Emotion.alarmed.lottieName, "frightening", "alarmed → frightening")
-        await assertNil(Emotion.sleeping.lottieName, "sleeping has no lottie yet (emoji fallback)")
+        await assertEqual(Emotion.sleeping.lottieName, "note_taking", "sleeping → note_taking (TEMP until sleep lottie ships)")
     }
 
     await runSuite("Lottie — bundle resources present") {
