@@ -67,8 +67,23 @@ public final class OverlayPanel {
     private let bubbleContainer = NSView()
     private var currentLottieName: String?
 
+    // Layout constants — tuned so long messages stay fully visible.
+    private static let panelWidth: CGFloat = 360
+    private static let bubbleMaxHeight: CGFloat = 320
+    private static let bubbleMinHeight: CGFloat = 60
+    private static let bubbleHorizontalPadding: CGFloat = 14
+    private static let bubbleVerticalPadding: CGFloat = 10
+    private static let characterHeight: CGFloat = 80
+    private static let panelMargin: CGFloat = 8
+    private static let bubbleCharGap: CGFloat = 16
+
     public init() {
-        let size = NSSize(width: 320, height: 180)
+        // Initial size — actual height grows dynamically to fit message text.
+        let initialHeight = OverlayPanel.characterHeight
+            + OverlayPanel.bubbleMinHeight
+            + OverlayPanel.bubbleCharGap
+            + (OverlayPanel.panelMargin * 2)
+        let size = NSSize(width: OverlayPanel.panelWidth, height: initialHeight)
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let origin = NSPoint(x: screen.maxX - size.width - 32, y: screen.minY + 32)
 
@@ -88,15 +103,19 @@ public final class OverlayPanel {
         let root = NSView(frame: NSRect(origin: .zero, size: size))
         root.wantsLayer = true
 
-        // Butler character — Lottie animation, fixed frame, no extra motion.
-        lottieView.frame = NSRect(x: size.width - 96, y: 16, width: 80, height: 80)
+        // Butler character — Lottie animation, fixed frame at bottom-right.
+        lottieView.frame = NSRect(x: size.width - 96, y: OverlayPanel.panelMargin,
+                                  width: 80, height: OverlayPanel.characterHeight)
         lottieView.contentMode = .scaleAspectFit
         lottieView.loopMode = .loop
         lottieView.wantsLayer = true
         root.addSubview(lottieView)
 
-        // Speech bubble (always visible — no fade)
-        bubbleContainer.frame = NSRect(x: 8, y: 96, width: size.width - 16, height: 76)
+        // Speech bubble — height resized dynamically in speak() based on text.
+        let bubbleY = lottieView.frame.maxY + OverlayPanel.bubbleCharGap
+        bubbleContainer.frame = NSRect(x: OverlayPanel.panelMargin, y: bubbleY,
+                                       width: size.width - OverlayPanel.panelMargin * 2,
+                                       height: OverlayPanel.bubbleMinHeight)
         bubbleContainer.wantsLayer = true
         bubbleContainer.layer?.cornerRadius = 14
         bubbleContainer.layer?.backgroundColor = Emotion.idle.bubbleColor.cgColor
@@ -105,11 +124,14 @@ public final class OverlayPanel {
         bubbleContainer.layer?.shadowOffset = CGSize(width: 0, height: -2)
         root.addSubview(bubbleContainer)
 
-        bubbleLabel.frame = bubbleContainer.bounds.insetBy(dx: 14, dy: 10)
+        bubbleLabel.frame = bubbleContainer.bounds.insetBy(
+            dx: OverlayPanel.bubbleHorizontalPadding,
+            dy: OverlayPanel.bubbleVerticalPadding
+        )
         bubbleLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
         bubbleLabel.textColor = .labelColor
-        bubbleLabel.maximumNumberOfLines = 4
-        bubbleLabel.lineBreakMode = .byTruncatingTail
+        bubbleLabel.maximumNumberOfLines = 0           // no truncation
+        bubbleLabel.lineBreakMode = .byWordWrapping    // wrap to next line
         bubbleLabel.autoresizingMask = [.width, .height]
         bubbleContainer.addSubview(bubbleLabel)
 
@@ -120,13 +142,65 @@ public final class OverlayPanel {
         panel.orderFrontRegardless()
     }
 
-    /// Update bubble text + butler emotion. Lottie animation drives all motion;
-    /// no fade, no auto-hide. autoHide param kept for API compat but ignored.
+    /// Update bubble text + butler emotion. Bubble + panel grow tall enough to
+    /// show the full message (no "..." truncation). Lottie drives all motion.
     public func speak(_ text: String, emotion: Emotion, autoHide: TimeInterval = 8.0) {
         applyLottie(named: emotion.lottieName)
         bubbleLabel.stringValue = text
         bubbleContainer.layer?.backgroundColor = emotion.bubbleColor.cgColor
         lottieView.setAccessibilityLabel("Sentinel butler — \(emotion.rawValue)")
+        resizeBubbleToFit(text: text)
+    }
+
+    /// Compute the bubble height needed to show `text` in full, then resize
+    /// bubbleContainer + the panel + repositions the lottie view accordingly.
+    private func resizeBubbleToFit(text: String) {
+        let labelWidth = OverlayPanel.panelWidth
+            - OverlayPanel.panelMargin * 2
+            - OverlayPanel.bubbleHorizontalPadding * 2
+        let attrs: [NSAttributedString.Key: Any] = [.font: bubbleLabel.font ?? NSFont.systemFont(ofSize: 14)]
+        let bounds = (text as NSString).boundingRect(
+            with: NSSize(width: labelWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attrs
+        )
+        let textH = ceil(bounds.height)
+        let bubbleH = max(OverlayPanel.bubbleMinHeight,
+                          min(OverlayPanel.bubbleMaxHeight,
+                              textH + OverlayPanel.bubbleVerticalPadding * 2))
+
+        let panelH = OverlayPanel.characterHeight
+            + OverlayPanel.bubbleCharGap
+            + bubbleH
+            + OverlayPanel.panelMargin * 2
+
+        // Reposition panel — keep bottom-right anchored as content grows upward.
+        let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let newOrigin = NSPoint(x: screen.maxX - OverlayPanel.panelWidth - 32,
+                                y: screen.minY + 32)
+        let newFrame = NSRect(origin: newOrigin,
+                              size: NSSize(width: OverlayPanel.panelWidth, height: panelH))
+        panel.setFrame(newFrame, display: true, animate: false)
+
+        // Re-layout subviews inside the new panel content size.
+        let newBubbleY = OverlayPanel.panelMargin + OverlayPanel.characterHeight + OverlayPanel.bubbleCharGap
+        bubbleContainer.frame = NSRect(
+            x: OverlayPanel.panelMargin,
+            y: newBubbleY,
+            width: OverlayPanel.panelWidth - OverlayPanel.panelMargin * 2,
+            height: bubbleH
+        )
+        bubbleLabel.frame = bubbleContainer.bounds.insetBy(
+            dx: OverlayPanel.bubbleHorizontalPadding,
+            dy: OverlayPanel.bubbleVerticalPadding
+        )
+        // Lottie position fixed at the bottom of the panel.
+        lottieView.frame = NSRect(
+            x: OverlayPanel.panelWidth - 96,
+            y: OverlayPanel.panelMargin,
+            width: 80,
+            height: OverlayPanel.characterHeight
+        )
     }
 
     // MARK: - Lottie loading
