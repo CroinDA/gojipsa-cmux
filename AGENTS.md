@@ -1,59 +1,94 @@
 # AGENTS.md — AI Agents Used to Build Sentinel
 
-> CMUX × AIM Intelligence Hackathon Seoul · 2026.04.26 · Built 9am-onward
+> CMUX × AIM Intelligence Hackathon Seoul · 2026.04.26
 
-## Multi-Model Orchestration
+이 프로젝트는 **여러 AI 에이전트가 역할 분담**해서 만들었음. 사람 1명 + Claude Code CLI를 중심으로, 각 작업마다 가장 적합한 모델을 라우팅해서 사용.
 
-| Agent | Model | Role |
+---
+
+## 빌드 타임 (개발 시 협업 모델)
+
+| Agent | Model | 역할 |
 |-------|-------|------|
-| **Orchestrator** | Claude Opus 4.7 | 아키텍처 설계, 의사결정, 코드 작성 통제, 최종 통합 |
-| **Design Reviewer** | Gemini 3.1 Pro | 심사 기준 분석, Swift-only 결정, 포지셔닝 (Sentinel 컨셉) |
-| **Code Reviewer** | Codex (GPT-5.3) | Swift 코드 리뷰 (버그/아키텍처/개선점) |
-| **Security Reviewer** | Qwen3-VL-32B (local MLX) | OWASP-기반 보안 리뷰, 키 노출/인젝션 검증 |
-| **Task Classifier** | Qwen Router (local MLX) | 작업 분류 → 파이프라인 자동 라우팅 |
+| **Orchestrator** | Claude Opus 4.7 (1M context) | 아키텍처 설계, 의사결정, Swift 코드 작성, 최종 통합, git 관리 |
+| **Design Reviewer** | Gemini 3.1 Pro | UI/UX 결정 (Swift-only 채택, 'Sentinel' 포지셔닝, 단순화 결정) |
+| **Code Reviewer** | Codex (GPT-5.3, reasoning=high) | Swift 코드 리뷰 — 버그/아키텍처/엣지케이스 |
+| **Security Reviewer** | Qwen3-VL-32B (local MLX) | OWASP-기반 보안 리뷰 — 키 노출, 인젝션, race condition |
+| **Task Classifier** | Qwen Router (local MLX) | 모든 사용자 요청을 분류 → 적합한 파이프라인 자동 라우팅 |
 
-## Runtime Agent (앱 내부)
+## 런타임 (앱 안에서 동작)
 
-| Agent | Model | Role |
+| Agent | Model | 역할 |
 |-------|-------|------|
-| **Sentinel Brain** | Gemini 2.5 Flash | 화면 텍스트 분석 → 상황 판단 + 한국어 참견 생성 |
+| **Sentinel Brain** | **Gemini 2.5 Flash** | cmux 화면 텍스트 1초마다 분석 → 한국어 멘트 + emotion(state) 생성 |
+| **Danger Explainer** | Gemini 2.5 Flash (다른 prompt) | 위험 명령 감지 시 "왜 위험한가 + 안전한 대안" 자연어 생성 |
 
-REST API 직접 호출 (URLSession). SDK 의존성 없음.
-`thinkingConfig.thinkingBudget=0` + `responseMimeType=application/json` 으로 토큰 효율 최적화.
+REST 직접 호출 (URLSession). SDK 의존성 없음.
+- `thinkingConfig.thinkingBudget=0` (응답 속도 ↑)
+- `responseMimeType=application/json` (analyze에서 구조화된 응답)
+- 1초 throttle + 화면 변화 감지로 60 RPM 무료 티어 안에 유지
+
+---
 
 ## 빌드 흐름
 
 ```
-Opus(설계) → Opus(직접 구현 — Swift 6.3)
+Opus(설계) → Opus(직접 구현 — Swift 5.9 + AppKit + Lottie)
            ↓
-       빌드 검증 (swift build)
+       빌드 검증 (swift build / xcodegen + xcodebuild)
            ↓
-   Gemini(디자인 리뷰) ∥ Codex(코드 리뷰) ∥ Qwen(보안 리뷰)
+   Gemini(디자인) ∥ Codex(코드) ∥ Qwen(보안) — 병렬 리뷰
            ↓
-       치명적 이슈 패치
+       치명적 이슈 패치 (Opus 적용)
            ↓
-       GitHub 푸시
+       SPM 107개 + XCTest 12개 자동 테스트
+           ↓
+       GitHub commit/push + DMG release
 ```
+
+---
 
 ## 주요 의사결정 (모델별 기여)
 
-1. **Swift-only 채택** — Gemini 3.1 Pro 디자인 리뷰가 결정적
-   - "Python-Bash 하이브리드는 실험실 프로토타입, 정돈된 Swift 앱은 Product Hunt 향기"
-2. **포지셔닝 업그레이드** — Gemini 3.1 Pro
-   - Clippy → "**Sentinel: A Context-Aware Native Guardian for Shell Agents**"
-3. **API 키 헤더 이전** — Qwen 보안 리뷰
-   - URL 쿼리스트링 → `x-goog-api-key` 헤더 (로깅 노출 방지)
-4. **SecretRedactor 추가** — Qwen 보안 리뷰
-   - 외부 API 송신 전 토큰/JWT/PEM 자동 마스킹
-5. **JSON 마크다운 fence 방어** — Codex/Gemini 리뷰
-   - LLM이 가끔 ```json``` 래핑하는 케이스 방어
+| 결정 | 주도 모델 | 영향 |
+|------|----------|------|
+| **Swift-only 채택** | Gemini 3.1 Pro | 단일 Swift 바이너리가 hybrid 스택보다 시연 임팩트 + DevEx + Tech Depth 모두 우수 |
+| **'Sentinel' 포지셔닝** (Clippy → Guardian) | Gemini 3.1 Pro | "A Context-Aware Native Guardian for Shell Agents" — Manaflow 창립자(cmux 제작자)에게 어필되는 framing |
+| **API 키 헤더 이전** | Qwen Security | URL 쿼리 → `x-goog-api-key` 헤더 (로깅 노출 방지) |
+| **SecretRedactor 추가** | Qwen Security | 외부 API 송신 전 토큰/JWT/PEM 자동 마스킹 |
+| **JSON 마크다운 fence 방어** | Codex | LLM이 ```json``` 래핑하는 케이스 방어 코드 |
+| **Lottie character 채택** | Opus + 사용자 협의 | 이모지 → 진짜 캐릭터 애니메이션 (UX 격상) |
+| **이모지 fallback 제거** | 사용자 직접 지시 | "집사는 항상 집사" — 단순 + 일관성 |
+| **bobAnimation 제거** | Opus 디버그 | LottieAnimationView 내부 layer 렌더링과 충돌 → 캐릭터 깜빡임 → 제거 |
+| **Gemini throttle 12s → 1s** | 사용자 피드백 | 더 빠른 반응 cadence 요구 |
+| **메뉴바 status item** | 사용자 직접 지시 | 항상 보이는 상태 + 안전한 종료 |
+
+---
 
 ## Hackathon Tooling
 
-- **Claude Code CLI** — Opus 4.7 (1M context) 메인 오케스트레이션
-- **MCP Servers**:
-  - `qwen_router.classify_task` — 작업 분류
-  - `gemini_design.design_review` — UI/UX & 전략 판단
-  - `codex_review.code_review` — 코드 리뷰
-  - `qwen_security.security_review` — 보안 리뷰
-- **GitHub CLI** — 레포 생성 & 푸시
+```
+Claude Code CLI (Opus 4.7, 1M context)
+  └─ Custom MCP Servers (모두 stdio, 로컬 또는 OAuth)
+      ├─ qwen_router.classify_task   ← 모든 사용자 메시지 자동 분류
+      ├─ qwen_security.security_review
+      ├─ codex_review.code_review     ← Codex CLI (GPT-5.3) wrapper
+      ├─ gemini_design.design_review  ← Gemini Pro CLI wrapper
+      └─ kimi_research.web_research   (이번엔 미사용)
+  └─ Hooks
+      └─ PreToolUse[Bash] → security-gate.sh (commit/push 전 리뷰 강제)
+GitHub CLI (gh)
+  └─ 레포 생성, push, releases (v1.0.0 ~ v1.4.2)
+XcodeGen
+  └─ project.yml → Sentinel.xcodeproj (재생성 가능)
+```
+
+---
+
+## 결과물
+
+- 5개 dotLottie 캐릭터 (note_taking / Checking / dancing / nodding_sighingly / frightening)
+- 119/119 테스트 통과 (SPM 107 + XCTest 12)
+- 8개 GitHub Release (v1.0.0 → v1.4.2)
+- 단일 Swift 바이너리 (.app 약 9MB)
+- 이 모두를 **AI 에이전트 5종 + 사람 1명**이 협업으로 완성
