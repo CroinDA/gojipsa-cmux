@@ -76,7 +76,7 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 │   AppDelegate                                               │
 │   ├── PathMigration (~/.sentinel → ~/.gojipsa, 첫 실행만)   │
 │   ├── OverlayPanel (NSPanel)        ┌── Lottie 애니메이션  │
-│   │   ├── LottieAnimationView ◀────┤   (5 emotion)         │
+│   │   ├── LottieAnimationView ◀────┤   (6 emotion)         │
 │   │   └── bubbleLabel (auto-resize) │                       │
 │   │                                                         │
 │   ├── AlarmPanel (full-screen)                              │
@@ -115,11 +115,11 @@ cmux 터미널 옆에 떠다니는 **AI 집사**. 위험 명령은 즉시 막고
 ```bash
 # 1. 다운로드 + Gatekeeper 우회 (자체서명 빌드)
 cd ~/Downloads && \
-curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.0.dmg && \
-xattr -dr com.apple.quarantine GOJIPSA-2.0.0.dmg && \
-hdiutil attach GOJIPSA-2.0.0.dmg -nobrowse && \
-ditto "/Volumes/GOJIPSA 2.0.0/GOJIPSA.app" "/Applications/GOJIPSA.app" && \
-hdiutil detach "/Volumes/GOJIPSA 2.0.0" && \
+curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.1.dmg && \
+xattr -dr com.apple.quarantine GOJIPSA-2.0.1.dmg && \
+hdiutil attach GOJIPSA-2.0.1.dmg -nobrowse && \
+ditto "/Volumes/GOJIPSA 2.0.1/GOJIPSA.app" "/Applications/GOJIPSA.app" && \
+hdiutil detach "/Volumes/GOJIPSA 2.0.1" && \
 xattr -dr com.apple.quarantine /Applications/GOJIPSA.app
 
 # 2. API 키 설정
