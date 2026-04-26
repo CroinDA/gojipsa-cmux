@@ -138,8 +138,28 @@ public final class AlarmPanel {
         }
     }
 
-    public func updateExplanation(_ explanation: String) {
+    public func updateExplanation(_ explanation: String, extendDismissBy seconds: TimeInterval = 3.0) {
+        // If panel already dismissed, ignore — avoids text update on hidden view
+        guard panel.isVisible else { return }
         explanationLabel.stringValue = explanation
+
+        // Extend the dismiss timer so the user has time to read the freshly-arrived advice
+        if seconds > 0 {
+            dismissTask?.cancel()
+            countdownTask?.cancel()
+            let totalSeconds = Int(seconds)
+            countdownTask = Task { @MainActor [weak self] in
+                for remaining in stride(from: totalSeconds, through: 1, by: -1) {
+                    self?.countdownLabel.stringValue = "\(remaining)초 후 자동 닫힘"
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    if Task.isCancelled { return }
+                }
+            }
+            dismissTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                self?.dismiss()
+            }
+        }
     }
 
     public func dismiss() {

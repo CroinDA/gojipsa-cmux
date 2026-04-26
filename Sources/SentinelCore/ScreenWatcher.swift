@@ -62,9 +62,14 @@ public actor ScreenWatcher {
 
         // Fast-path: dangerous pattern (regex, ~ms)
         if let danger = DangerDetector.scan(screen) {
-            let isNewPattern = danger.pattern != lastAlarmedPattern
+            // Suppress "keystroke storm": as user types `rm -rf /tmp` then `rm -rf /tmp/foo`,
+            // both match — but second is just an extension of the first. Treat as same alarm.
+            let isVariationOfLast = !lastAlarmedPattern.isEmpty &&
+                (danger.pattern.hasPrefix(lastAlarmedPattern) ||
+                 lastAlarmedPattern.hasPrefix(danger.pattern))
             let cooledDown = Date().timeIntervalSince(lastAlarmedAt) > ScreenWatcher.dangerCooldownSec
-            if isNewPattern || cooledDown {
+            let shouldFire = cooledDown || !isVariationOfLast
+            if shouldFire {
                 lastAlarmedPattern = danger.pattern
                 lastAlarmedAt = Date()
                 lastCommentAt = Date()
