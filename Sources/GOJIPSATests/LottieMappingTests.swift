@@ -34,6 +34,45 @@ func runLottieMappingTests() async {
         }
     }
 
+    await runSuite("Lottie — resolver supports SwiftPM and Xcode resource layouts") {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent("gojipsa-lottie-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: root) }
+
+        do {
+            let spmRoot = root.appendingPathComponent("spm", isDirectory: true)
+            let spmLottieDir = spmRoot.appendingPathComponent("lottie", isDirectory: true)
+            try fm.createDirectory(at: spmLottieDir, withIntermediateDirectories: true)
+            let spmURL = spmLottieDir.appendingPathComponent("note_taking.lottie")
+            try Data("stub".utf8).write(to: spmURL)
+
+            let xcodeRoot = root.appendingPathComponent("xcode", isDirectory: true)
+            let xcodeLottieDir = xcodeRoot
+                .appendingPathComponent("Resources", isDirectory: true)
+                .appendingPathComponent("lottie", isDirectory: true)
+            try fm.createDirectory(at: xcodeLottieDir, withIntermediateDirectories: true)
+            let xcodeURL = xcodeLottieDir.appendingPathComponent("note_taking.lottie")
+            try Data("stub".utf8).write(to: xcodeURL)
+
+            await assertEqual(
+                LottieResourceResolver.url(named: "note_taking", under: spmRoot),
+                spmURL,
+                "resolver should find SwiftPM lottie/name.lottie layout"
+            )
+            await assertEqual(
+                LottieResourceResolver.url(named: "note_taking", under: xcodeRoot),
+                xcodeURL,
+                "resolver should find Xcode Resources/lottie/name.lottie layout"
+            )
+            await assertNil(
+                LottieResourceResolver.url(named: "../note_taking", under: xcodeRoot),
+                "resolver should reject unsafe resource names"
+            )
+        } catch {
+            await assert(false, "failed to create temp lottie resolver fixture: \(error)")
+        }
+    }
+
     await runSuite("Lottie — Comment.lottie overrides emotion.lottieName") {
         let c1 = Comment(text: "test", emotion: .talking, shouldReact: true, lottie: "angry")
         await assertEqual(c1.lottie, "angry", "explicit lottie override should be preserved")

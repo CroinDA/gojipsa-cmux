@@ -12,6 +12,50 @@ public let gojipsaCoreResourceBundle: Bundle = {
     #endif
 }()
 
+/// Resolves dotLottie assets across the two layouts this project uses:
+/// SwiftPM copies `Resources/lottie` as `lottie/`, while the Xcode app target
+/// copies the blue `Resources` folder as `Resources/lottie/`.
+public enum LottieResourceResolver {
+    private static let subdirectories = ["lottie", "Resources/lottie"]
+
+    public static func url(named name: String, in bundle: Bundle = gojipsaCoreResourceBundle) -> URL? {
+        guard isSafeResourceName(name) else { return nil }
+
+        for subdirectory in subdirectories {
+            if let url = bundle.url(forResource: name, withExtension: "lottie", subdirectory: subdirectory) {
+                return url
+            }
+        }
+        if let url = bundle.url(forResource: name, withExtension: "lottie") {
+            return url
+        }
+        return url(named: name, under: bundle.resourceURL)
+    }
+
+    public static func url(named name: String, under resourceURL: URL?) -> URL? {
+        guard isSafeResourceName(name), let resourceURL else { return nil }
+
+        for subdirectory in subdirectories {
+            let url = resourceURL
+                .appendingPathComponent(subdirectory, isDirectory: true)
+                .appendingPathComponent("\(name).lottie", isDirectory: false)
+            if FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+
+        let topLevel = resourceURL.appendingPathComponent("\(name).lottie", isDirectory: false)
+        return FileManager.default.fileExists(atPath: topLevel.path) ? topLevel : nil
+    }
+
+    private static func isSafeResourceName(_ name: String) -> Bool {
+        guard !name.isEmpty else { return false }
+        return name.allSatisfy { ch in
+            ch.isLetter || ch.isNumber || ch == "_" || ch == "-"
+        }
+    }
+}
+
 public enum Emotion: String, Sendable {
     case idle = "🙂"
     case talking = "😄"
@@ -218,25 +262,17 @@ public final class OverlayPanel {
     private static var resourceBundle: Bundle { gojipsaCoreResourceBundle }
 
     private func resolveLottieURL(name: String) -> URL? {
-        let bundle = OverlayPanel.resourceBundle
-        if let url = bundle.url(forResource: name, withExtension: "lottie", subdirectory: "lottie") {
-            return url
-        }
-        if let url = bundle.url(forResource: name, withExtension: "lottie") {
-            return url
-        }
-        if let bundleURL = bundle.resourceURL?.appendingPathComponent("lottie/\(name).lottie"),
-           FileManager.default.fileExists(atPath: bundleURL.path) {
-            return bundleURL
-        }
-        return nil
+        LottieResourceResolver.url(named: name, in: OverlayPanel.resourceBundle)
     }
 
     private func applyLottie(named name: String) {
         if currentLottieName == name && lottieView.isAnimationPlaying {
             return
         }
-        guard let url = resolveLottieURL(name: name) else { return }
+        guard let url = resolveLottieURL(name: name) else {
+            FileHandle.standardError.write(Data("⚠️  Lottie asset not found: \(name).lottie\n".utf8))
+            return
+        }
         DotLottieFile.loadedFrom(url: url) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }

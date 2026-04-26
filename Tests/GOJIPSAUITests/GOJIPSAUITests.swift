@@ -281,6 +281,60 @@ final class GOJIPSAUITests: XCTestCase {
                       "Gemini live response should arrive within 12s and contain Korean text. Last seen: \(sample)")
     }
 
+    // MARK: - Hackathon deadline demo
+
+    func testHackathonDeadlineNaggingDemo_runsForThirtySeconds() throws {
+        // Starts at the user's example time, then compresses the remaining
+        // hackathon clock so a single 30s Xcode run shows submission pressure,
+        // finalist prep, final pitching, and winner-announcement nagging.
+        let app = makeApp(args: [
+            "--demo-hackathon-deadlines",
+            "--demo-now", "17:33",
+            "--demo-step-minutes", "15",
+            "--demo-tick", "3",
+            "--dwell", "33",
+        ])
+        app.launch()
+
+        let started = Date()
+        let deadline = started.addingTimeInterval(30)
+        var sawSubmissionThirtyMinuteMode = false
+        var sawFinalistPrep = false
+        var sawAwardMessage = false
+        var lastRunningElapsed: TimeInterval = 0
+        var samples: [String] = []
+
+        while Date() < deadline {
+            XCTAssertNotEqual(app.state, .notRunning,
+                              "GOJIPSA should stay alive for the 30s hackathon demo")
+
+            let texts = app.staticTexts.allElementsBoundByIndex.compactMap { $0.value as? String }
+            if !texts.isEmpty { samples = texts }
+
+            sawSubmissionThirtyMinuteMode = sawSubmissionThirtyMinuteMode || texts.contains {
+                $0.contains("제출 마감 30분 전") && $0.contains("새 기능 금지")
+            }
+            sawFinalistPrep = sawFinalistPrep || texts.contains {
+                $0.contains("파이널리스트")
+            }
+            sawAwardMessage = sawAwardMessage || texts.contains {
+                $0.contains("수상자 발표")
+            }
+
+            lastRunningElapsed = Date().timeIntervalSince(started)
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+
+        XCTAssertGreaterThanOrEqual(lastRunningElapsed, 29.0,
+                                    "demo should remain observable for about 30s")
+        XCTAssertTrue(sawSubmissionThirtyMinuteMode,
+                      "17:33 should trigger the submission-deadline nag. Last seen: \(samples)")
+        XCTAssertTrue(sawFinalistPrep,
+                      "compressed demo should reach the 19:25 finalist announcement. Last seen: \(samples)")
+        XCTAssertTrue(sawAwardMessage,
+                      "compressed demo should reach the 20:00 winner announcement. Last seen: \(samples)")
+    }
+
     func testApp_terminatesAfterDwell() throws {
         let app = makeApp(args: ["--demo-overlay", "--dwell", "2"])
         app.launch()
