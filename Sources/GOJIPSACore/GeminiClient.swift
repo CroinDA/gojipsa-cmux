@@ -24,8 +24,8 @@ public actor GeminiClient {
         self.apiKey = apiKey
         self.endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent")!
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 15
-        config.timeoutIntervalForResource = 20
+        config.timeoutIntervalForRequest = 5   // fast failure — don't block the polling loop
+        config.timeoutIntervalForResource = 8
         self.session = URLSession(configuration: config)
     }
 

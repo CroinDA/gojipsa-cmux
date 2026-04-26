@@ -35,6 +35,7 @@ public actor ScreenWatcher {
     private var lastAlarmedPattern: String = ""
     private var lastAlarmedAt = Date.distantPast
     private var lastAnalyzedScreen: String = ""
+    private var lastGeminiAttemptAt = Date.distantPast  // retry gate after Gemini failure
     private let onComment: @Sendable (Comment) -> Void
     private let onAlarm: @Sendable (DangerAlarm) -> Void
 
@@ -146,12 +147,14 @@ public actor ScreenWatcher {
         // Throttle Gemini analyze() — keep API cost predictable
         if Date().timeIntervalSince(lastCommentAt) < ScreenWatcher.geminiThrottleSec { return }
 
-        // Skip if screen hasn't meaningfully changed since the last analyze —
-        // avoids burning API calls on a static screen and prevents the bubble
-        // from getting stuck repeating itself.
+        // Skip if screen hasn't changed since last analyze —
+        // but retry after 30s in case the previous Gemini call failed silently.
         let analyzeKey = String(screen.suffix(2000))
-        if analyzeKey == lastAnalyzedScreen { return }
+        if analyzeKey == lastAnalyzedScreen {
+            if Date().timeIntervalSince(lastGeminiAttemptAt) < 30 { return }
+        }
         lastAnalyzedScreen = analyzeKey
+        lastGeminiAttemptAt = Date()
 
         let redacted = SecretRedactor.redact(screen)
         if let comment = await gemini.analyze(screen: redacted) {
