@@ -45,15 +45,27 @@ Swift macOS app (.app bundle)
      xattr -dr com.apple.quarantine ~/Downloads/Sentinel-*.dmg
      ```
    - **노타라이즈된 빌드인 경우** (v1.0.1+): 그냥 더블클릭으로 OK
-3. API 키 설정:
+3. **Gemini API 키 설정**:
    ```bash
    mkdir -p ~/.sentinel
    echo "YOUR_GEMINI_API_KEY" > ~/.sentinel/api-key.txt
    chmod 600 ~/.sentinel/api-key.txt
    ```
-4. cmux 탭 안에서 실행:
+4. **cmux Socket Password 설정** (v1.2.0+ 권장 — 1-pane workflow)
+   - cmux 메뉴 → **Settings** → Socket Control → Password 설정
+   - 그 다음 password를 Sentinel에 알려주기:
+     ```bash
+     echo "YOUR_CMUX_PASSWORD" > ~/.sentinel/cmux-password.txt
+     chmod 600 ~/.sentinel/cmux-password.txt
+     ```
+   - 이걸 안 하면 Sentinel을 cmux 탭 **안**에서만 실행 가능 (foreground)
+   - 설정하면 어디서든 실행 가능 (Spotlight, Applications, etc.)
+5. 실행:
    ```bash
+   # password 설정한 경우 — 어디서든
    open -a Sentinel
+   # 또는 cmux 탭 안에서
+   /Applications/Sentinel.app/Contents/MacOS/Sentinel
    ```
 
 ### Option B — Build from source (개발자)
@@ -103,6 +115,16 @@ cmux 다른 탭을 열고 평소처럼 작업하면 됨. Sentinel은 우측 하�
 - **전송 전 자동 마스킹**: API 키, 토큰, JWT, PEM 키, password/secret 변수
 - 위험 명령 감지(rm -rf 등)는 **로컬 정규식만** 사용 — 외부 송신 없음
 - API 키 파일 권한: 600 (소유자만 읽기)
+- **cmux socket password도 600 권한으로 저장** (`~/.sentinel/cmux-password.txt`)
+
+## Workflows
+
+| 모드 | cmux 탭 수 | Sentinel 실행 위치 | 설정 필요 |
+|------|----------|--------------------|----------|
+| **기본 (PID-ancestry auth)** | 2개 (작업 + Sentinel) | cmux 탭 안 (foreground) | API key만 |
+| **Password auth (권장, v1.2.0+)** | **1개로 OK** | 아무데서나 (Spotlight, `open -a` 등) | API key + cmux password |
+
+password 모드를 강력히 추천 — cmux Settings에서 한 번 설정하고 `~/.sentinel/cmux-password.txt`에 저장하면 끝.
 
 ## Why Sentinel?
 

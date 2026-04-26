@@ -22,6 +22,7 @@ public actor ScreenWatcher {
     public static let nagThrottleSec: TimeInterval = 180
 
     private let cmuxPath: String
+    private let cmuxPassword: String
     private let mySurface: String
     private let gemini: GeminiClient
     private var lastScreen: String = ""
@@ -39,10 +40,39 @@ public actor ScreenWatcher {
         onAlarm: @escaping @Sendable (DangerAlarm) -> Void
     ) {
         self.cmuxPath = ScreenWatcher.locateCmux()
+        self.cmuxPassword = ScreenWatcher.loadCmuxPassword()
         self.mySurface = ProcessInfo.processInfo.environment["CMUX_SURFACE_ID"] ?? ""
         self.gemini = GeminiClient(apiKey: apiKey)
         self.onComment = onComment
         self.onAlarm = onAlarm
+    }
+
+    /// Loads cmux socket password (for cmux's password-auth mode).
+    /// Order: CMUX_SOCKET_PASSWORD env var → ~/.sentinel/cmux-password.txt → empty
+    /// Empty result is fine if cmux is in default mode (PID-ancestry auth).
+    public static func loadCmuxPassword() -> String {
+        if let env = ProcessInfo.processInfo.environment["CMUX_SOCKET_PASSWORD"], !env.isEmpty {
+            return env
+        }
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let path = home.appendingPathComponent(".sentinel/cmux-password.txt")
+
+        // Defense-in-depth: warn if password file has loose permissions.
+        // We still read it (don't break the demo), but emit a warning so the user fixes it.
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: path.path),
+           let perm = attrs[.posixPermissions] as? NSNumber {
+            let mode = perm.intValue & 0o777
+            if mode & 0o077 != 0 {  // any group/other bits set
+                let warning = "⚠️  \(path.path) has loose perms (0\(String(mode, radix: 8))). Run: chmod 600 \(path.path)\n"
+                FileHandle.standardError.write(Data(warning.utf8))
+            }
+        }
+
+        if let data = try? Data(contentsOf: path),
+           let str = String(data: data, encoding: .utf8) {
+            return str.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return ""
     }
 
     public func run() async {
@@ -153,6 +183,13 @@ public actor ScreenWatcher {
             let proc = Process()
             proc.executableURL = URL(fileURLWithPath: cmuxPath)
             proc.arguments = args
+            // Pass cmux socket password if set — enables 1-pane workflow
+            // (Sentinel can run outside cmux process tree)
+            if !cmuxPassword.isEmpty {
+                var env = ProcessInfo.processInfo.environment
+                env["CMUX_SOCKET_PASSWORD"] = cmuxPassword
+                proc.environment = env
+            }
             let pipe = Pipe()
             proc.standardOutput = pipe
             proc.standardError = Pipe()
