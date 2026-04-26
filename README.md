@@ -36,21 +36,35 @@ Swift macOS app (.app bundle)
 - **[cmux](https://cmux.dev)** (DMG 또는 `brew install cmux`)
 - **Gemini API key** ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
-### Build & Run
+### Option A — DMG (권장, 일반 사용자)
+
+1. **[Latest Release](https://github.com/CroinDA/sentinel-cmux/releases/latest)** 에서 `Sentinel-X.Y.Z.dmg` 다운로드
+2. 더블클릭 → Sentinel.app을 Applications 폴더로 드래그
+3. API 키 설정:
+   ```bash
+   mkdir -p ~/.sentinel
+   echo "YOUR_GEMINI_API_KEY" > ~/.sentinel/api-key.txt
+   chmod 600 ~/.sentinel/api-key.txt
+   ```
+4. cmux 탭 안에서 실행:
+   ```bash
+   open -a Sentinel
+   ```
+
+### Option B — Build from source (개발자)
 
 ```bash
 git clone https://github.com/CroinDA/sentinel-cmux.git
 cd sentinel-cmux
 
-# 1. API key (둘 중 하나)
-mkdir -p ~/.sentinel && echo "YOUR_GEMINI_API_KEY" > ~/.sentinel/api-key.txt
-chmod 600 ~/.sentinel/api-key.txt
-# 또는: export GEMINI_API_KEY=...
+# API 키 설정 (위와 동일)
 
-# 2. Build
+# 빌드 (.app + .dmg 한 번에)
+./scripts/build-app.sh
+./scripts/build-dmg.sh
+
+# 또는 바이너리만:
 swift build -c release
-
-# 3. Run inside a cmux tab (반드시 cmux 안에서)
 .build/release/Sentinel
 ```
 
