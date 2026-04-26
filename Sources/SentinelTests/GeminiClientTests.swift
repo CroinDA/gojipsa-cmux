@@ -26,8 +26,11 @@ func runGeminiClientTests() async {
         await runSuite("GeminiClient — live integration") {
             await skip("GEMINI_TEST_KEY env var not set")
         }
+        await runSuite("GeminiClient — explainDanger live") {
+            await skip("GEMINI_TEST_KEY env var not set")
+        }
     } else {
-        await runSuite("GeminiClient — live integration (real Gemini call)") {
+        await runSuite("GeminiClient — analyze() live (real Gemini call)") {
             let client = GeminiClient(apiKey: envKey)
             let danger = """
             $ rm -rf /tmp/test-dir
@@ -40,6 +43,24 @@ func runGeminiClientTests() async {
                 await assert(c.shouldReact, "shouldReact must be true for danger")
                 print("    💬 sample reply: \(c.text) [\(c.emotion.rawValue)]")
             }
+        }
+
+        await runSuite("GeminiClient — explainDanger live (Feature 2)") {
+            let client = GeminiClient(apiKey: envKey)
+            let explanation = await client.explainDanger(command: "rm -rf /var/log")
+            await assertNotNil(explanation, "explainDanger should return a Korean reason for rm -rf")
+            if let exp = explanation {
+                await assert(!exp.isEmpty, "explanation text non-empty")
+                // No JSON wrapping expected — plain text
+                await assert(!exp.hasPrefix("{"), "should NOT be JSON wrapped (got: \(exp.prefix(40)))")
+                print("    💬 explainDanger reply: \(exp)")
+            }
+        }
+
+        await runSuite("GeminiClient — explainDanger empty input") {
+            let client = GeminiClient(apiKey: envKey)
+            let result = await client.explainDanger(command: "   \n  ")
+            await assertNil(result, "blank input should short-circuit")
         }
     }
 }

@@ -1,6 +1,26 @@
 import Foundation
 
+/// Full-screen alarm payload — distinct from Comment (which is the small bubble).
+public struct DangerAlarm: Sendable {
+    public let pattern: String
+    public let warning: String
+    public let explanation: String?
+
+    public init(pattern: String, warning: String, explanation: String? = nil) {
+        self.pattern = pattern
+        self.warning = warning
+        self.explanation = explanation
+    }
+}
+
 public actor ScreenWatcher {
+    // Tunable cadence
+    public static let pollIntervalNanos: UInt64 = 1_000_000_000   // 1s — fast danger detection
+    public static let geminiThrottleSec: TimeInterval = 12         // ≤ 1 analyze() per 12s
+    public static let dangerCooldownSec: TimeInterval = 30         // suppress repeat alarm on same pattern
+    public static let nagAfterIdleSec: TimeInterval = 90
+    public static let nagThrottleSec: TimeInterval = 180
+
     private let cmuxPath: String
     private let mySurface: String
     private let gemini: GeminiClient
@@ -8,13 +28,21 @@ public actor ScreenWatcher {
     private var lastChangeAt = Date()
     private var lastNagAt = Date.distantPast
     private var lastCommentAt = Date.distantPast
+    private var lastAlarmedPattern: String = ""
+    private var lastAlarmedAt = Date.distantPast
     private let onComment: @Sendable (Comment) -> Void
+    private let onAlarm: @Sendable (DangerAlarm) -> Void
 
-    public init(apiKey: String, onComment: @escaping @Sendable (Comment) -> Void) {
+    public init(
+        apiKey: String,
+        onComment: @escaping @Sendable (Comment) -> Void,
+        onAlarm: @escaping @Sendable (DangerAlarm) -> Void
+    ) {
         self.cmuxPath = ScreenWatcher.locateCmux()
         self.mySurface = ProcessInfo.processInfo.environment["CMUX_SURFACE_ID"] ?? ""
         self.gemini = GeminiClient(apiKey: apiKey)
         self.onComment = onComment
+        self.onAlarm = onAlarm
     }
 
     public func run() async {
@@ -24,7 +52,7 @@ public actor ScreenWatcher {
         }
         while !Task.isCancelled {
             await tick()
-            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            try? await Task.sleep(nanoseconds: ScreenWatcher.pollIntervalNanos)
         }
     }
 
@@ -32,29 +60,50 @@ public actor ScreenWatcher {
         let screen = await readOtherSurfaces()
         guard !screen.isEmpty else { return }
 
+        // Fast-path: dangerous pattern (regex, ~ms)
         if let danger = DangerDetector.scan(screen) {
-            // De-dup: only fire on new content
-            if screen != lastScreen {
-                onComment(Comment(text: danger.warning, emotion: danger.emotion, shouldReact: true))
+            let isNewPattern = danger.pattern != lastAlarmedPattern
+            let cooledDown = Date().timeIntervalSince(lastAlarmedAt) > ScreenWatcher.dangerCooldownSec
+            if isNewPattern || cooledDown {
+                lastAlarmedPattern = danger.pattern
+                lastAlarmedAt = Date()
                 lastCommentAt = Date()
+                // 1) Show small bubble immediately (canned warning)
+                onComment(Comment(text: danger.warning, emotion: danger.emotion, shouldReact: true))
+                // 2) Trigger full-screen alarm right away with placeholder explanation; refine async
+                onAlarm(DangerAlarm(pattern: danger.pattern, warning: danger.warning, explanation: nil))
+                // 3) Fetch natural-language explanation from Gemini in background, dispatch updated alarm
+                let pat = danger.pattern, warn = danger.warning
+                let local = self.gemini
+                let cb = self.onAlarm
+                Task.detached {
+                    if let exp = await local.explainDanger(command: pat) {
+                        cb(DangerAlarm(pattern: pat, warning: warn, explanation: exp))
+                    }
+                }
             }
+            // Update screen state and bail — no Gemini analyze() on dangerous content
+            lastScreen = screen
+            lastChangeAt = Date()
+            return
         }
 
-        // Detect change vs idle
+        // Idle detection
         if screen != lastScreen {
             lastScreen = screen
             lastChangeAt = Date()
         } else {
             let idleSec = Date().timeIntervalSince(lastChangeAt)
-            if idleSec > 90, Date().timeIntervalSince(lastNagAt) > 180 {
+            if idleSec > ScreenWatcher.nagAfterIdleSec,
+               Date().timeIntervalSince(lastNagAt) > ScreenWatcher.nagThrottleSec {
                 onComment(Comment(text: "조용하네... 막힌거야 아니면 농땡이?", emotion: .nagging, shouldReact: true))
                 lastNagAt = Date()
                 return
             }
         }
 
-        // Throttle Gemini: at most once every 12 seconds
-        if Date().timeIntervalSince(lastCommentAt) < 12 { return }
+        // Throttle Gemini analyze() — keep API cost predictable
+        if Date().timeIntervalSince(lastCommentAt) < ScreenWatcher.geminiThrottleSec { return }
 
         let redacted = SecretRedactor.redact(screen)
         if let comment = await gemini.analyze(screen: redacted) {

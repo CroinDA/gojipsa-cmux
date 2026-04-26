@@ -5,6 +5,7 @@ import SentinelCore
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var panel: OverlayPanel!
+    var alarm: AlarmPanel!
     var watcher: ScreenWatcher!
     var watchTask: Task<Void, Never>?
 
@@ -18,11 +19,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.show()
         panel.speak("👀 Sentinel awake. Watching your shell...", emotion: .idle)
 
-        watcher = ScreenWatcher(apiKey: apiKey, onComment: { [weak self] comment in
-            Task { @MainActor in
-                self?.panel.speak(comment.text, emotion: comment.emotion)
+        alarm = AlarmPanel()
+
+        watcher = ScreenWatcher(
+            apiKey: apiKey,
+            onComment: { [weak self] comment in
+                Task { @MainActor in
+                    self?.panel.speak(comment.text, emotion: comment.emotion)
+                }
+            },
+            onAlarm: { [weak self] alarmEvent in
+                Task { @MainActor in
+                    if alarmEvent.explanation == nil {
+                        // First fire: show alarm immediately with placeholder
+                        self?.alarm.showAlarm(
+                            pattern: alarmEvent.pattern,
+                            warning: alarmEvent.warning,
+                            explanation: nil
+                        )
+                    } else {
+                        // Refinement: explanation arrived from Gemini, update text in-place
+                        self?.alarm.updateExplanation(alarmEvent.explanation ?? "")
+                    }
+                }
             }
-        })
+        )
         let w = watcher!
         watchTask = Task.detached { await w.run() }
     }

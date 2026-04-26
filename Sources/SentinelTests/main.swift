@@ -5,6 +5,7 @@ print("🧪 Sentinel test suite")
 await runSmokeTests()
 await runDangerDetectorTests()
 await runSecretRedactorTests()
+await runScreenWatcherTests()
 await runGeminiClientTests()
 
 await printSummary()

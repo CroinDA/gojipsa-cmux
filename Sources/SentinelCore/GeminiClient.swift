@@ -26,6 +26,61 @@ public actor GeminiClient {
         self.session = URLSession(configuration: config)
     }
 
+    /// Explain a dangerous command in natural Korean.
+    /// Returns: 1-2 sentence explanation including WHY it's dangerous + a safer alternative.
+    /// Returns nil on API failure or missing key (caller should fall back to canned warning).
+    public func explainDanger(command: String) async -> String? {
+        guard !apiKey.isEmpty else { return nil }
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let systemPrompt = """
+        You are Sentinel — a sassy AI guardian for shell users. The user is about to run a dangerous command.
+        Reply in Korean (반말, friendly but urgent).
+        ONE OR TWO short sentences. No JSON, no markdown — plain text only.
+        Cover: (1) WHY it's risky, (2) a safer alternative if one exists.
+        Be specific to the actual command — not generic.
+        """
+        let userPrompt = "Dangerous command:\n\n\(trimmed.suffix(500))"
+
+        var req = URLRequest(url: endpoint)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
+
+        let body: [String: Any] = [
+            "system_instruction": ["parts": [["text": systemPrompt]]],
+            "contents": [["role": "user", "parts": [["text": userPrompt]]]],
+            "generationConfig": [
+                "temperature": 0.7,
+                "maxOutputTokens": 200,
+                "thinkingConfig": ["thinkingBudget": 0]
+            ]
+        ]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (data, resp) = try await session.data(for: req)
+            guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            return parsePlainText(data)
+        } catch {
+            return nil
+        }
+    }
+
+    private func parsePlainText(_ data: Data) -> String? {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let candidates = root["candidates"] as? [[String: Any]],
+              let first = candidates.first,
+              let content = first["content"] as? [String: Any],
+              let parts = content["parts"] as? [[String: Any]],
+              let text = parts.first?["text"] as? String else {
+            return nil
+        }
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleaned.isEmpty ? nil : cleaned
+    }
+
     public func analyze(screen: String) async -> Comment? {
         guard !apiKey.isEmpty else { return nil }
         guard !screen.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
