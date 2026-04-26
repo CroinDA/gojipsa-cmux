@@ -8,10 +8,15 @@ options:
   generateEmptyDirectories: true
   groupSortPosition: top
 
+packages:
+  Lottie:
+    url: https://github.com/airbnb/lottie-ios.git
+    from: "4.5.0"
+
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    MARKETING_VERSION: "1.2.1"
+    MARKETING_VERSION: "1.3.0"
     CURRENT_PROJECT_VERSION: "1"
     PRODUCT_BUNDLE_IDENTIFIER: dev.croinda.$(PRODUCT_NAME:rfc1034identifier)
     DEVELOPMENT_TEAM: 3BAL9BR86N
@@ -29,6 +34,13 @@ targets:
     sources:
       - path: Sources/Sentinel
       - path: Sources/SentinelCore
+        excludes:
+          - "Resources/lottie/**"
+      - path: Sources/SentinelCore/Resources
+        type: folder
+    dependencies:
+      - package: Lottie
+        product: Lottie
     info:
       path: Info-Sentinel.plist
       properties:
