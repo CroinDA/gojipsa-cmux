@@ -16,10 +16,10 @@ public struct DangerAlarm: Sendable {
 public actor ScreenWatcher {
     // Tunable cadence
     public static let pollIntervalNanos: UInt64 = 1_000_000_000   // 1s — fast danger detection
-    // Gemini analyze() rate — old python demo reacted every ~5s. We default to 3s
-    // here for snappier feedback, but ALSO require screen content to have changed
-    // since the last analyze so we don't burn API calls on a static screen.
-    public static let geminiThrottleSec: TimeInterval = 3
+    // Gemini analyze() rate — user requested 1s reactions. With pollInterval=1s
+    // and the change-detection guard, this caps API calls at ~60/min when screen
+    // is constantly changing (within Gemini 2.5 Flash free tier's 60 RPM limit).
+    public static let geminiThrottleSec: TimeInterval = 1
     public static let dangerCooldownSec: TimeInterval = 30         // suppress repeat alarm on same pattern
     public static let nagAfterIdleSec: TimeInterval = 90
     public static let nagThrottleSec: TimeInterval = 180
