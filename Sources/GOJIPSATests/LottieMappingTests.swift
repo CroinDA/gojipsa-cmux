@@ -11,10 +11,14 @@ func runLottieMappingTests() async {
         await assertEqual(Emotion.sleeping.lottieName, "sleepy", "sleeping → sleepy")
     }
 
-    await runSuite("Lottie — bundle resources present") {
+    await runSuite("Lottie — all 11 bundle resources present") {
         // SPM build copies Resources/lottie/ → Bundle.module.bundleURL/lottie/
         let bundle = gojipsaCoreResourceBundle
-        let names = ["note_taking", "Checking", "happy", "nagging", "frightening", "sleepy"]
+        // All lottie files Gemini can freely choose from
+        let names = [
+            "note_taking", "Checking", "happy", "nagging", "frightening", "sleepy",
+            "angry", "crying", "walking", "dancing", "nodding_sighingly"
+        ]
         for name in names {
             let url = bundle.url(forResource: name, withExtension: "lottie", subdirectory: "lottie")
                 ?? bundle.url(forResource: name, withExtension: "lottie")
@@ -28,6 +32,13 @@ func runLottieMappingTests() async {
                 await assert(size > 1000, "\(name).lottie should be a real file (> 1KB), got \(size)")
             }
         }
+    }
+
+    await runSuite("Lottie — Comment.lottie overrides emotion.lottieName") {
+        let c1 = Comment(text: "test", emotion: .talking, shouldReact: true, lottie: "angry")
+        await assertEqual(c1.lottie, "angry", "explicit lottie override should be preserved")
+        let c2 = Comment(text: "test", emotion: .talking, shouldReact: true)
+        await assertEqual(c2.lottie, nil, "no override → lottie should be nil (use emotion.lottieName)")
     }
 
     await runSuite("Lottie — file format sanity (ZIP container)") {

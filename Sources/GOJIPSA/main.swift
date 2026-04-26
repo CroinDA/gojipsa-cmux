@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var watcher: ScreenWatcher!
     var watchTask: Task<Void, Never>?
     var statusBar: StatusBarController!
+    // Prevents macOS App Nap / background throttling while monitoring the terminal.
+    var activityToken: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ note: Notification) {
         // First-run migration: copy ~/.sentinel/* → ~/.gojipsa/* for v1.x users.
@@ -40,6 +42,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+
+        // Keep this process alive and un-throttled regardless of visibility.
+        // Without this macOS App Nap suspends the polling loop after ~5 min of inactivity.
+        activityToken = ProcessInfo.processInfo.beginActivity(
+            options: [.background, .idleSystemSleepDisabled],
+            reason: "꼬집사 터미널 모니터링"
+        )
 
         panel = OverlayPanel()
         panel.show()
@@ -151,7 +160,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             apiKey: apiKey,
             onComment: { [weak self] comment in
                 Task { @MainActor in
-                    self?.panel.speak(comment.text, emotion: comment.emotion)
+                    self?.panel.speak(comment)
+                    self?.statusBar.noteActivity()
                 }
             },
             onAlarm: { [weak self] alarmEvent in
@@ -176,6 +186,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ note: Notification) {
         watchTask?.cancel()
+        if let token = activityToken {
+            ProcessInfo.processInfo.endActivity(token)
+        }
     }
 
     private func parseDwellSeconds(_ args: [String], default fallback: Int) -> Int {

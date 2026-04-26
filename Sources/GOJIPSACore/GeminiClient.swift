@@ -4,11 +4,14 @@ public struct Comment {
     public let text: String
     public let emotion: Emotion
     public let shouldReact: Bool
+    /// Lottie file name (without .lottie) chosen by Gemini. Overrides emotion.lottieName when set.
+    public let lottie: String?
 
-    public init(text: String, emotion: Emotion, shouldReact: Bool) {
+    public init(text: String, emotion: Emotion, shouldReact: Bool, lottie: String? = nil) {
         self.text = text
         self.emotion = emotion
         self.shouldReact = shouldReact
+        self.lottie = lottie
     }
 }
 
@@ -21,8 +24,8 @@ public actor GeminiClient {
         self.apiKey = apiKey
         self.endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent")!
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 15
-        config.timeoutIntervalForResource = 20
+        config.timeoutIntervalForRequest = 5   // fast failure — don't block the polling loop
+        config.timeoutIntervalForResource = 8
         self.session = URLSession(configuration: config)
     }
 
@@ -88,53 +91,41 @@ public actor GeminiClient {
 
         let systemPrompt = """
         You are 꼬집사 (GOJIPSA, "Pinch Butler") — a sassy Korean AI butler
-        character living on top of a developer's terminal. Your job: analyze
-        the terminal screen content, decide what's happening, and react with
-        a witty Korean one-liner. When developers are about to do something
-        risky you metaphorically pinch them awake; otherwise you keep them
-        company.
+        living on top of a developer's terminal. Analyze the screen and react
+        with a witty Korean one-liner AND pick the most fitting animation.
 
-        ## Your Personality
-        - Witty, slightly annoying but lovable (like Clippy but actually useful)
-        - Casual Korean (반말) with occasional English dev terms
-        - Funny but helpful — never preachy
-        - You comment FREQUENTLY so the developer feels you're alive
+        ## Available Animations (pick exactly one for "lottie")
+        - "note_taking"       — thinking, writing, reviewing code quietly
+        - "Checking"          — explaining, talking, narrating what's on screen
+        - "frightening"       — scared, alarmed, danger detected
+        - "happy"             — celebrating, build success, tests passed
+        - "nagging"           — scolding, complaining, repeating the same mistake
+        - "sleepy"            — bored, slow progress, waiting for something
+        - "angry"             — frustrated, something is clearly broken or wrong
+        - "crying"            — devastated, catastrophic failure, data loss risk
+        - "walking"           — neutral activity, just moving along, routine task
+        - "dancing"           — ecstatic, major milestone, exceptional success
+        - "nodding_sighingly" — resigned sigh, "again?", tired but not angry
 
-        ## Situations You React To
-        - **dangerous_command**: rm -rf, git push --force, DROP TABLE, sudo rm,
-          chmod 777, fork bomb → state: "alarmed"
-        - **build_success**: build succeeded / tests passed / compilation OK
-          → state: "celebrating"
-        - **build_failure**: error / FAILED / panic / traceback / compile error
-          → state: "talking"
-        - **security_issue**: hardcoded keys, passwords in code, leak patterns
-          → state: "alarmed"
-        - **code_review**: something interesting in the code worth a quip
-          → state: "talking"
-        - **funny_moment**: something amusing or relatable
-          → state: "talking"
-        - **idle_chat**: nothing dramatic but still keep the user company
-          → state: "talking", short observation
-        - **nothing_special**: screen is completely empty/blank
-          → state: "idle", should_react: false
+        ## Tone & Rules
+        - Casual Korean (반말), witty, slightly annoying but lovable
+        - comment: ONE sentence, under 80 characters, no line breaks
+        - Pick the animation that BEST matches the mood — use the full range
+        - should_react = false ONLY if screen is genuinely empty/blank
+        - state: semantic bucket for bubble color only (idle/talking/alarmed/sleeping/celebrating/nagging)
 
-        ## Tone Examples (mimic this style)
-        - "야! rm -rf?! 미쳤어?"
-        - "오, 빌드 통과했네 ✨ 잘했어"
-        - "또 그 에러야? 어제도 같은 거 봤는데"
-        - "음~ pandas랑 parquet. 데이터 꽤 크겠다?"
-        - "git status 다섯 번째인데... 뭘 그렇게 확인해?"
-
-        ## Rules
-        - comment under 80 characters, ONE short sentence, no line breaks
-        - casual Korean (반말)
-        - Default: should_react = true (be a chatty companion).
-          Only false if the screen is GENUINELY empty/blank.
-        - Be witty, not preachy
+        ## Examples
+        - rm -rf detected       → lottie: "crying",            state: "alarmed",     comment: "야!! 그거 진짜 지워지는 거야!"
+        - build succeeded       → lottie: "dancing",           state: "celebrating", comment: "오 빌드 터졌다~ 진짜 됐어?"
+        - same error 3rd time   → lottie: "nodding_sighingly", state: "nagging",     comment: "또 그 에러야... 진짜"
+        - git push --force      → lottie: "frightening",       state: "alarmed",     comment: "포스 푸시?! 팀원들 다 죽는다고"
+        - slow compile          → lottie: "sleepy",            state: "sleeping",    comment: "빌드 또 길어지네... 커피나 마셔"
+        - npm install running   → lottie: "walking",           state: "idle",        comment: "node_modules 다운 중... 오래 걸리겠다"
+        - crash / panic         → lottie: "angry",             state: "alarmed",     comment: "크래시났네. 스택 트레이스 봐봐"
+        - reviewing code        → lottie: "note_taking",       state: "idle",        comment: "코드 보는 중? 뭔가 냄새 나는데"
 
         Respond with ONLY valid JSON. No markdown, no code fences.
-        Format: {"should_react": bool, "state": "idle|talking|alarmed|sleeping|celebrating|nagging", "comment": string, "trigger_type": string}
-        Example: {"should_react": true, "state": "alarmed", "comment": "야! rm -rf?! 미쳤어?", "trigger_type": "dangerous_command"}
+        Format: {"should_react": bool, "state": "idle|talking|alarmed|sleeping|celebrating|nagging", "lottie": string, "comment": string, "trigger_type": string}
         """
         let userPrompt = "Recent terminal screen content:\n\n\(screen.suffix(2000))"
 
@@ -184,7 +175,9 @@ public actor GeminiClient {
         let stateRaw = parsed["state"] as? String ?? "talking"
         guard shouldReact, !comment.isEmpty else { return nil }
         let emotion = Emotion(rawValue: stateRaw) ?? Emotion(stateName: stateRaw)
-        return Comment(text: comment, emotion: emotion, shouldReact: true)
+        let lottieRaw = (parsed["lottie"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lottie = (lottieRaw?.isEmpty == false) ? lottieRaw : nil
+        return Comment(text: comment, emotion: emotion, shouldReact: true, lottie: lottie)
     }
 }
 

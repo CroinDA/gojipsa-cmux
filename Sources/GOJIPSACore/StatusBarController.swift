@@ -8,6 +8,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let statusMenuItem = NSMenuItem(title: "🟡 Checking...", action: nil, keyEquivalent: "")
     private var refreshTimer: Timer?
+    private var lastActivityAt: Date = Date.distantPast
 
     public override init() {
         self.item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -66,8 +67,15 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
             }
         }()
         item.button?.title = icon
-        item.button?.toolTip = label
-        statusMenuItem.title = "\(icon) \(report.status.summary)"
+        let activitySuffix: String = {
+            guard lastActivityAt != Date.distantPast else { return "" }
+            let sec = Int(Date().timeIntervalSince(lastActivityAt))
+            if sec < 5 { return " · 방금 반응" }
+            if sec < 60 { return " · \(sec)초 전 반응" }
+            return " · \(sec / 60)분 전 반응"
+        }()
+        item.button?.toolTip = label + activitySuffix
+        statusMenuItem.title = "\(icon) \(report.status.summary)\(activitySuffix)"
     }
 
     // MARK: - Menu actions
@@ -82,6 +90,11 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func quit() {
         NSApp.terminate(nil)
+    }
+
+    /// Call this whenever a comment is generated — updates the "last active" tooltip.
+    public func noteActivity() {
+        lastActivityAt = Date()
     }
 
     // MARK: - NSMenuDelegate
