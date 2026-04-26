@@ -1,9 +1,8 @@
 import Foundation
 
-actor ScreenWatcher {
+public actor ScreenWatcher {
     private let cmuxPath: String
     private let mySurface: String
-    private let danger = DangerDetector.self
     private let gemini: GeminiClient
     private var lastScreen: String = ""
     private var lastChangeAt = Date()
@@ -11,14 +10,14 @@ actor ScreenWatcher {
     private var lastCommentAt = Date.distantPast
     private let onComment: @Sendable (Comment) -> Void
 
-    init(apiKey: String, onComment: @escaping @Sendable (Comment) -> Void) {
+    public init(apiKey: String, onComment: @escaping @Sendable (Comment) -> Void) {
         self.cmuxPath = ScreenWatcher.locateCmux()
         self.mySurface = ProcessInfo.processInfo.environment["CMUX_SURFACE_ID"] ?? ""
         self.gemini = GeminiClient(apiKey: apiKey)
         self.onComment = onComment
     }
 
-    func run() async {
+    public func run() async {
         guard !cmuxPath.isEmpty else {
             onComment(Comment(text: "cmux를 찾을 수 없어. cmux 안에서 실행해줘.", emotion: .alarmed, shouldReact: true))
             return

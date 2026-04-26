@@ -1,6 +1,6 @@
 import AppKit
 
-enum Emotion: String {
+public enum Emotion: String, Sendable {
     case idle = "🙂"
     case talking = "😄"
     case alarmed = "😱"
@@ -8,7 +8,7 @@ enum Emotion: String {
     case celebrating = "🥳"
     case nagging = "😤"
 
-    var bubbleColor: NSColor {
+    public var bubbleColor: NSColor {
         switch self {
         case .alarmed: return NSColor.systemRed.withAlphaComponent(0.92)
         case .celebrating: return NSColor.systemOrange.withAlphaComponent(0.92)
@@ -20,7 +20,7 @@ enum Emotion: String {
 }
 
 @MainActor
-final class OverlayPanel {
+public final class OverlayPanel {
     private let panel: NSPanel
     private let characterLabel = NSTextField(labelWithString: Emotion.idle.rawValue)
     private let bubbleLabel = NSTextField(wrappingLabelWithString: "")
@@ -28,7 +28,7 @@ final class OverlayPanel {
     private var hideTask: Task<Void, Never>?
     private var bobAnimation: Timer?
 
-    init() {
+    public init() {
         let size = NSSize(width: 320, height: 180)
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let origin = NSPoint(x: screen.maxX - size.width - 32, y: screen.minY + 32)
@@ -78,11 +78,11 @@ final class OverlayPanel {
         startBobAnimation()
     }
 
-    func show() {
+    public func show() {
         panel.orderFrontRegardless()
     }
 
-    func speak(_ text: String, emotion: Emotion, autoHide: TimeInterval = 8.0) {
+    public func speak(_ text: String, emotion: Emotion, autoHide: TimeInterval = 8.0) {
         characterLabel.stringValue = emotion.rawValue
         bubbleLabel.stringValue = text
 

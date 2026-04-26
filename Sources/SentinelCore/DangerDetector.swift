@@ -1,12 +1,18 @@
 import Foundation
 
-struct Danger {
-    let pattern: String
-    let warning: String
-    let emotion: Emotion = .alarmed
+public struct Danger {
+    public let pattern: String
+    public let warning: String
+    public let emotion: Emotion
+
+    public init(pattern: String, warning: String, emotion: Emotion = .alarmed) {
+        self.pattern = pattern
+        self.warning = warning
+        self.emotion = emotion
+    }
 }
 
-enum DangerDetector {
+public enum DangerDetector {
     private static let rules: [(NSRegularExpression, String)] = build()
 
     private static func build() -> [(NSRegularExpression, String)] {
@@ -30,12 +36,12 @@ enum DangerDetector {
         }
     }
 
-    static func scan(_ text: String) -> Danger? {
+    public static func scan(_ text: String) -> Danger? {
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         for (re, msg) in rules {
             if let match = re.firstMatch(in: text, options: [], range: range),
                let r = Range(match.range, in: text) {
-                return Danger(pattern: String(text[r]), warning: msg)
+                return Danger(pattern: String(text[r]), warning: msg, emotion: .alarmed)
             }
         }
         return nil

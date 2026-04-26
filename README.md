@@ -73,6 +73,18 @@ swift build -c release
 .build/release/Sentinel
 ```
 
+### 테스트 실행
+
+XCTest-free 테스트 러너 (Xcode 미설치 머신에서도 동작). DangerDetector/SecretRedactor 단위 테스트 + 스모크 테스트 + Gemini 라이브 통합 테스트:
+
+```bash
+# 라이브 통합 테스트 포함
+GEMINI_TEST_KEY=$(cat ~/.sentinel/api-key.txt) swift run SentinelTests
+
+# 통합 테스트 스킵 (단위 테스트만)
+swift run SentinelTests
+```
+
 ### 배포용 빌드 (노타라이즈)
 
 Apple Developer Program 멤버는 [NOTARIZATION.md](NOTARIZATION.md) 따라하면 Gatekeeper 통과되는 배포 빌드 만들 수 있음:

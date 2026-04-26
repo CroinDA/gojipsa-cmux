@@ -1,17 +1,23 @@
 import Foundation
 
-struct Comment {
-    let text: String
-    let emotion: Emotion
-    let shouldReact: Bool
+public struct Comment {
+    public let text: String
+    public let emotion: Emotion
+    public let shouldReact: Bool
+
+    public init(text: String, emotion: Emotion, shouldReact: Bool) {
+        self.text = text
+        self.emotion = emotion
+        self.shouldReact = shouldReact
+    }
 }
 
-actor GeminiClient {
+public actor GeminiClient {
     private let apiKey: String
     private let endpoint: URL
     private let session: URLSession
 
-    init(apiKey: String, model: String = "gemini-2.5-flash") {
+    public init(apiKey: String, model: String = "gemini-2.5-flash") {
         self.apiKey = apiKey
         self.endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent")!
         let config = URLSessionConfiguration.ephemeral
@@ -20,7 +26,7 @@ actor GeminiClient {
         self.session = URLSession(configuration: config)
     }
 
-    func analyze(screen: String) async -> Comment? {
+    public func analyze(screen: String) async -> Comment? {
         guard !apiKey.isEmpty else { return nil }
         guard !screen.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
 

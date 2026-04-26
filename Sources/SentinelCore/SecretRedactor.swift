@@ -1,6 +1,6 @@
 import Foundation
 
-enum SecretRedactor {
+public enum SecretRedactor {
     private static let rules: [(NSRegularExpression, String)] = build()
 
     private static func build() -> [(NSRegularExpression, String)] {
@@ -28,7 +28,7 @@ enum SecretRedactor {
         }
     }
 
-    static func redact(_ text: String) -> String {
+    public static func redact(_ text: String) -> String {
         var result = text
         for (re, replacement) in rules {
             let range = NSRange(result.startIndex..<result.endIndex, in: result)

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SentinelCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
