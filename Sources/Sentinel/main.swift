@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var alarm: AlarmPanel!
     var watcher: ScreenWatcher!
     var watchTask: Task<Void, Never>?
+    var statusBar: StatusBarController!
 
     func applicationDidFinishLaunching(_ note: Notification) {
         let apiKey = loadApiKey()
@@ -41,6 +42,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.speak("👀 Sentinel awake. Watching your shell...", emotion: .idle)
 
         alarm = AlarmPanel()
+        // Always-visible menu bar item — green/red dot reflects cmux state,
+        // click to see status / quit Sentinel.
+        statusBar = StatusBarController()
 
         // ─── Startup health check — surface cmux status visually so the user
         //     immediately knows if Sentinel can actually read their terminal.

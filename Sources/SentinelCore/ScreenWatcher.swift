@@ -16,7 +16,10 @@ public struct DangerAlarm: Sendable {
 public actor ScreenWatcher {
     // Tunable cadence
     public static let pollIntervalNanos: UInt64 = 1_000_000_000   // 1s — fast danger detection
-    public static let geminiThrottleSec: TimeInterval = 12         // ≤ 1 analyze() per 12s
+    // Gemini analyze() rate — old python demo reacted every ~5s. We default to 3s
+    // here for snappier feedback, but ALSO require screen content to have changed
+    // since the last analyze so we don't burn API calls on a static screen.
+    public static let geminiThrottleSec: TimeInterval = 3
     public static let dangerCooldownSec: TimeInterval = 30         // suppress repeat alarm on same pattern
     public static let nagAfterIdleSec: TimeInterval = 90
     public static let nagThrottleSec: TimeInterval = 180
@@ -31,6 +34,7 @@ public actor ScreenWatcher {
     private var lastCommentAt = Date.distantPast
     private var lastAlarmedPattern: String = ""
     private var lastAlarmedAt = Date.distantPast
+    private var lastAnalyzedScreen: String = ""
     private let onComment: @Sendable (Comment) -> Void
     private let onAlarm: @Sendable (DangerAlarm) -> Void
 
@@ -90,8 +94,11 @@ public actor ScreenWatcher {
         let screen = await readOtherSurfaces()
         guard !screen.isEmpty else { return }
 
-        // Fast-path: dangerous pattern (regex, ~ms)
-        if let danger = DangerDetector.scan(screen) {
+        // Fast-path: dangerous pattern (regex, ~ms).
+        // Scan the recent tail (last 2000 chars) so old scrollback doesn't keep
+        // matching the same pattern forever and starve Gemini analyze().
+        let recentTail = String(screen.suffix(2000))
+        if let danger = DangerDetector.scan(recentTail) {
             // Suppress "keystroke storm": as user types `rm -rf /tmp` then `rm -rf /tmp/foo`,
             // both match — but second is just an extension of the first. Treat as same alarm.
             let isVariationOfLast = !lastAlarmedPattern.isEmpty &&
@@ -103,11 +110,8 @@ public actor ScreenWatcher {
                 lastAlarmedPattern = danger.pattern
                 lastAlarmedAt = Date()
                 lastCommentAt = Date()
-                // 1) Show small bubble immediately (canned warning)
                 onComment(Comment(text: danger.warning, emotion: danger.emotion, shouldReact: true))
-                // 2) Trigger full-screen alarm right away with placeholder explanation; refine async
                 onAlarm(DangerAlarm(pattern: danger.pattern, warning: danger.warning, explanation: nil))
-                // 3) Fetch natural-language explanation from Gemini in background, dispatch updated alarm
                 let pat = danger.pattern, warn = danger.warning
                 let local = self.gemini
                 let cb = self.onAlarm
@@ -116,11 +120,14 @@ public actor ScreenWatcher {
                         cb(DangerAlarm(pattern: pat, warning: warn, explanation: exp))
                     }
                 }
+                // We just fired — bail this tick so the alarm gets full focus
+                lastScreen = screen
+                lastChangeAt = Date()
+                return
             }
-            // Update screen state and bail — no Gemini analyze() on dangerous content
-            lastScreen = screen
-            lastChangeAt = Date()
-            return
+            // Pattern still present but cooldown active or just a typing variation.
+            // Fall through to Gemini analyze() below so the bubble keeps reflecting
+            // whatever the user is ACTUALLY working on now (not stuck on the old danger).
         }
 
         // Idle detection
@@ -139,6 +146,13 @@ public actor ScreenWatcher {
 
         // Throttle Gemini analyze() — keep API cost predictable
         if Date().timeIntervalSince(lastCommentAt) < ScreenWatcher.geminiThrottleSec { return }
+
+        // Skip if screen hasn't meaningfully changed since the last analyze —
+        // avoids burning API calls on a static screen and prevents the bubble
+        // from getting stuck repeating itself.
+        let analyzeKey = String(screen.suffix(2000))
+        if analyzeKey == lastAnalyzedScreen { return }
+        lastAnalyzedScreen = analyzeKey
 
         let redacted = SecretRedactor.redact(screen)
         if let comment = await gemini.analyze(screen: redacted) {

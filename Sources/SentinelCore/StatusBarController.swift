@@ -1,0 +1,92 @@
+import AppKit
+
+/// Menu-bar status item with quit option.
+/// Periodically refreshes its icon based on cmux connection state.
+@MainActor
+public final class StatusBarController: NSObject, NSMenuDelegate {
+    private let item: NSStatusItem
+    private let menu = NSMenu()
+    private let statusMenuItem = NSMenuItem(title: "🟡 Checking...", action: nil, keyEquivalent: "")
+    private var refreshTimer: Timer?
+
+    public override init() {
+        self.item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        super.init()
+
+        // Default icon — will be replaced on first status refresh
+        if let button = item.button {
+            button.title = "🛡️"
+            button.toolTip = "Sentinel for cmux"
+        }
+
+        statusMenuItem.isEnabled = false
+        menu.addItem(statusMenuItem)
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Show status (--status)",
+                                action: #selector(showStatus),
+                                keyEquivalent: "s"))
+        menu.addItem(NSMenuItem.separator())
+        let quitItem = NSMenuItem(title: "Quit Sentinel",
+                                  action: #selector(quit),
+                                  keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        for case let m? in menu.items.map({ $0.action != nil ? $0 : nil }) where m.target == nil {
+            m.target = self
+        }
+
+        item.menu = menu
+        menu.delegate = self
+
+        // Refresh status every 5s
+        startRefreshTimer()
+        Task { await refreshNow() }
+    }
+
+    // MARK: - Refresh
+
+    private func startRefreshTimer() {
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in await self?.refreshNow() }
+        }
+    }
+
+    private func refreshNow() async {
+        let report = await ScreenWatcher.quickStatus()
+        let (icon, label): (String, String) = {
+            switch report.status {
+            case .connected:        return ("🟢🛡️", "Sentinel — cmux connected")
+            case .accessDenied,
+                 .passwordRejected: return ("🔒🛡️", "Sentinel — cmux access denied")
+            case .serverNotRunning,
+                 .binaryNotFound:   return ("🔴🛡️", "Sentinel — cmux not running")
+            case .timeout:          return ("⏱🛡️", "Sentinel — cmux timeout")
+            case .unknown:          return ("⚠️🛡️", "Sentinel — cmux unknown")
+            }
+        }()
+        item.button?.title = icon
+        item.button?.toolTip = label
+        statusMenuItem.title = "\(icon) \(report.status.summary)"
+    }
+
+    // MARK: - Menu actions
+
+    @objc private func showStatus() {
+        Task { @MainActor in
+            await refreshNow()
+            // Open menu programmatically so user sees the latest line
+            item.button?.performClick(nil)
+        }
+    }
+
+    @objc private func quit() {
+        NSApp.terminate(nil)
+    }
+
+    // MARK: - NSMenuDelegate
+
+    public func menuWillOpen(_ menu: NSMenu) {
+        Task { @MainActor in await refreshNow() }
+    }
+}

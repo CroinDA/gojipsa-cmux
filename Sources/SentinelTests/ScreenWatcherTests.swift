@@ -6,8 +6,10 @@ func runScreenWatcherTests() async {
         // Poll interval must be 1s (was 5s pre-Feature-2) for fast danger detection
         await assertEqual(ScreenWatcher.pollIntervalNanos, 1_000_000_000, "poll interval should be 1s")
 
-        // Gemini analyze() should be throttled to keep API cost predictable
-        await assert(ScreenWatcher.geminiThrottleSec >= 10, "Gemini analyze throttle should be ≥10s")
+        // Gemini analyze() should be throttled — was 12s; reduced to 3s for
+        // snappier reactions matching the original Python demo's 5s cadence.
+        await assert(ScreenWatcher.geminiThrottleSec >= 1 && ScreenWatcher.geminiThrottleSec <= 10,
+                     "Gemini throttle should be in 1..10s window")
 
         // Danger cooldown should suppress repeated alarms on the same pattern
         await assert(ScreenWatcher.dangerCooldownSec >= 20, "danger cooldown should be ≥20s")
