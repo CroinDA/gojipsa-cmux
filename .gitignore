@@ -3,26 +3,26 @@
 .swiftpm/
 Packages/
 Package.resolved
+!GOJIPSA.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Build artifacts
 dist/
 build/
 
-# XcodeGen output — regenerated from project.yml, no need to track
-GOJIPSA.xcodeproj/
-
-# Xcode user-specific
-*.xcuserstate
-DerivedData/
-*.xcodeproj
-DerivedData/
+# Canonical Xcode project is tracked.
+# Keep stale local/generated projects out of git.
+Sentinel.xcodeproj/
 
 # Xcode
 xcuserdata/
 *.xcuserstate
+DerivedData/
 
 # macOS
 .DS_Store
+
+# JetBrains user-specific project files
+.idea/
 
 # Secrets
 .gojipsa/

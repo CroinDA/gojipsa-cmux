@@ -12,9 +12,10 @@
 
 **매 릴리즈마다 (자동, ~10분):**
 ```bash
-SIGN_ID="Developer ID Application: 팀원이름 (TEAMID)" ./scripts/build-app.sh
-SIGN_ID="Developer ID Application: 팀원이름 (TEAMID)" ./scripts/build-dmg.sh
-NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
+VERSION=2.0.1 \
+SIGN_ID="Developer ID Application: 팀원이름 (TEAMID)" \
+NOTARY_PROFILE="AC_NOTARY" \
+./scripts/release.sh
 ```
 
 끝. `dist/GOJIPSA-X.Y.Z.dmg`가 노타라이즈+staple된 배포용 빌드.
@@ -43,6 +44,8 @@ NOTARY_PROFILE="AC_NOTARY" ./scripts/notarize.sh
    1) ABC1234567890ABCDEF "Developer ID Application: 홍길동 (XYZ987654)"
    ```
    따옴표 안의 전체 문자열이 `SIGN_ID`로 사용됨.
+
+`Apple Development: ...` 인증서는 로컬 개발/디버깅용이다. Homebrew/DMG 배포용 Gatekeeper 통과에는 반드시 `Developer ID Application: ...` identity가 필요하다.
 
 ### 1-2. App-Specific Password 생성
 
@@ -86,14 +89,15 @@ cd gojipsa-cmux
 export SIGN_ID="Developer ID Application: 홍길동 (XYZ987654)"
 
 ./scripts/build-app.sh   # → dist/GOJIPSA.app (Hardened Runtime + Developer ID 서명)
-./scripts/build-dmg.sh   # → dist/GOJIPSA-2.0.0.dmg (서명됨)
+./scripts/build-dmg.sh   # → dist/GOJIPSA-2.0.1.dmg (서명됨)
 ```
 
 검증:
 ```bash
 codesign -dv --verbose=4 dist/GOJIPSA.app 2>&1 | grep "Authority\|Identifier\|Runtime"
+lipo -archs dist/GOJIPSA.app/Contents/MacOS/GOJIPSA
 ```
-**Authority=Developer ID Application** 가 보여야 함. 안 보이면 인증서 셋업 다시 확인.
+**Authority=Developer ID Application** 와 `arm64 x86_64`가 보여야 함. 안 보이면 인증서/아카이브 설정을 다시 확인.
 
 ---
 
@@ -113,7 +117,7 @@ export NOTARY_PROFILE="AC_NOTARY"
 
 성공 시 끝에:
 ```
-✅ Notarized & stapled: dist/GOJIPSA-2.0.0.dmg
+✅ Notarized & stapled: dist/GOJIPSA-2.0.1.dmg
    spctl: source=Notarized Developer ID
 ```
 
@@ -124,11 +128,14 @@ export NOTARY_PROFILE="AC_NOTARY"
 ## Phase 4 — 릴리즈 업로드
 
 ```bash
-gh release create v2.0.1 \
-    "dist/GOJIPSA-2.0.1.dmg" \
-    --title "꼬집사 (GOJIPSA) v2.0.1" \
-    --notes "Notarized release"
+VERSION=2.0.1 \
+SIGN_ID="Developer ID Application: 팀원이름 (TEAMID)" \
+NOTARY_PROFILE="AC_NOTARY" \
+UPLOAD_GITHUB_RELEASE=1 \
+./scripts/release.sh
 ```
+
+스크립트가 출력한 `sha256` 값을 `CroinDA/homebrew-gojipsa-cmux` tap의 `Casks/gojipsa.rb`에 반영한 뒤 push한다.
 
 ---
 
@@ -141,7 +148,7 @@ xcrun notarytool log <SUBMISSION_ID> --keychain-profile "AC_NOTARY"
 ```
 
 자주 보이는 원인:
-- Hardened Runtime 미적용 → `build-app.sh`에 `--options=runtime` 있는지 확인
+- Hardened Runtime 미적용 → `GOJIPSA.xcodeproj`와 `build-app.sh`의 `ENABLE_HARDENED_RUNTIME=YES` 확인
 - 서명 안 된 임베디드 바이너리 → `--deep` 옵션으로 재서명
 - `LSMinimumSystemVersion`이 너무 낮음 → 13.0 이상이어야 안전
 
@@ -153,6 +160,16 @@ security unlock-keychain login.keychain-db
 
 ### 인증서가 안 보임
 키체인 앱에서 인증서가 **My Certificates** 카테고리에 있어야 하고, **expand**(▶) 하면 **private key**가 같이 보여야 함. private key 없으면 다른 맥에서 발급한 거라 못 씀.
+
+### Homebrew 설치 후 "Apple은 악성 코드가 없음을 확인할 수 없습니다"
+배포 artifact가 ad-hoc, Apple Development, unsigned DMG, 또는 notarization/stapling 누락 상태라는 뜻이다. 확인:
+```bash
+codesign -dv --verbose=4 /Applications/GOJIPSA.app 2>&1 | grep "Authority\\|TeamIdentifier\\|flags"
+spctl -a -vv -t exec /Applications/GOJIPSA.app
+spctl -a -vv -t open --context context:primary-signature dist/GOJIPSA-2.0.1.dmg
+```
+
+정상 배포는 `Authority=Developer ID Application`, `TeamIdentifier=...`, `flags=...runtime...`, `source=Notarized Developer ID`가 보여야 한다. 실패하면 `scripts/release.sh`로 다시 만든 DMG만 GitHub Release와 Homebrew cask에 반영한다.
 
 ---
 

@@ -37,7 +37,7 @@ REST 직접 호출 (URLSession). SDK 의존성 없음.
 ```
 Opus(설계) → Opus(직접 구현 — Swift 5.9 + AppKit + Lottie)
            ↓
-       빌드 검증 (swift build / xcodegen + xcodebuild)
+       빌드 검증 (swift build / xcodebuild)
            ↓
    Gemini(디자인) ∥ Codex(코드) ∥ Qwen(보안) — 병렬 리뷰
            ↓
@@ -83,8 +83,8 @@ Claude Code CLI (Opus 4.7, 1M context)
       └─ PreToolUse[Bash] → security-gate.sh (commit/push 전 리뷰 강제)
 GitHub CLI (gh)
   └─ 레포 생성, push, releases (v1.0.0 ~ v1.4.4 = pre-release, v2.0.0 = stable rebrand)
-XcodeGen
-  └─ project.yml → GOJIPSA.xcodeproj (재생성 가능)
+Xcode
+  └─ GOJIPSA.xcodeproj → canonical app archive/signing/UI-test project
 ```
 
 ---

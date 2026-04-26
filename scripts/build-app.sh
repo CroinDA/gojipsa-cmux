@@ -1,115 +1,101 @@
 #!/usr/bin/env bash
-# build-app.sh — Builds GOJIPSA.app bundle from release binary
-set -eo pipefail
+# build-app.sh - Archive and export a signed universal GOJIPSA.app.
+set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-2.0.0}"
+VERSION="${VERSION:-2.0.1}"
+BUILD_NUMBER="${BUILD_NUMBER:-1}"
 APP_NAME="GOJIPSA"
-BUNDLE_ID="app.gojipsa.GOJIPSA"
-DISPLAY_NAME="꼬집사 (GOJIPSA)"
+PROJECT_NAME="GOJIPSA"
+SCHEME="GOJIPSA"
+TEAM_ID="${DEVELOPMENT_TEAM:-3BAL9BR86N}"
 DIST_DIR="$PROJECT_DIR/dist"
+ARCHIVE_PATH="$DIST_DIR/$APP_NAME.xcarchive"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
+DERIVED_DATA="$PROJECT_DIR/.build/xcode-derived-data"
 
-# Validate inputs (defense-in-depth)
-if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
-    echo "❌ VERSION must be semver (got: '$VERSION')" >&2
+fail() {
+    echo "ERROR: $*" >&2
     exit 1
+}
+
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+    fail "VERSION must be semver (got: '$VERSION')"
 fi
-# Sanity check: APP_DIR must be inside PROJECT_DIR/dist
+
 case "$APP_DIR" in
     "$PROJECT_DIR/dist/"*) ;;
-    *) echo "❌ Refusing to operate outside dist/" >&2; exit 1 ;;
+    *) fail "Refusing to operate outside dist/" ;;
 esac
 
-echo "🔨 Building release binary..."
-swift build -c release --arch arm64
-
-echo "📦 Creating $APP_NAME.app bundle..."
-rm -rf "$APP_DIR"
-mkdir -p "$APP_DIR/Contents/MacOS"
-mkdir -p "$APP_DIR/Contents/Resources"
-
-# Copy executable
-cp ".build/release/$APP_NAME" "$APP_DIR/Contents/MacOS/$APP_NAME"
-chmod +x "$APP_DIR/Contents/MacOS/$APP_NAME"
-
-# Copy SPM-generated resource bundles (lottie assets, etc.) so the runtime can
-# locate Bundle.module-sourced files. Without this the lottie animations would
-# be missing from the .app and the butler wouldn't render.
-SPM_RELEASE_DIR=".build/arm64-apple-macosx/release"
-if [ ! -d "$SPM_RELEASE_DIR" ]; then
-    SPM_RELEASE_DIR=".build/release"  # SPM legacy layout
-fi
-for bundle in "$SPM_RELEASE_DIR"/*.bundle; do
-    if [ -d "$bundle" ]; then
-        echo "  Embedding bundle: $(basename "$bundle")"
-        cp -R "$bundle" "$APP_DIR/Contents/Resources/"
-    fi
-done
-
-# PkgInfo
-printf 'APPL????' > "$APP_DIR/Contents/PkgInfo"
-
-# Info.plist
-cat > "$APP_DIR/Contents/Info.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>$APP_NAME</string>
-    <key>CFBundleIdentifier</key>
-    <string>$BUNDLE_ID</string>
-    <key>CFBundleName</key>
-    <string>$APP_NAME</string>
-    <key>CFBundleDisplayName</key>
-    <string>$DISPLAY_NAME</string>
-    <key>CFBundleVersion</key>
-    <string>$VERSION</string>
-    <key>CFBundleShortVersionString</key>
-    <string>$VERSION</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSSupportsAutomaticTermination</key>
-    <false/>
-    <key>NSHumanReadableCopyright</key>
-    <string>Built at CMUX × AIM Hackathon Seoul 2026</string>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <false/>
-    </dict>
-</dict>
-</plist>
-PLIST
-
-echo "🔏 Code signing..."
-# SIGN_ID may be a Developer ID cert ("Developer ID Application: NAME (TEAMID)")
-# or any local self-signed identity in the user's keychain. Override via env var.
-SIGN_ID="${SIGN_ID:-CroinDA HQ Development}"
-if security find-identity -v -p codesigning | grep -q "$SIGN_ID"; then
-    codesign --force --deep --sign "$SIGN_ID" --options=runtime "$APP_DIR" 2>&1 | tail -3
-    echo "  Signed with: $SIGN_ID"
-else
-    codesign --force --deep --sign - "$APP_DIR" 2>&1 | tail -3
-    echo "  ⚠️  Cert '$SIGN_ID' not found — used ad-hoc sign"
-    echo "  ⚠️  Ad-hoc signed builds are for LOCAL DEV only."
-    echo "  ⚠️  Distribution requires a Developer ID cert + notarization."
+if [ ! -d "$PROJECT_NAME.xcodeproj" ]; then
+    fail "$PROJECT_NAME.xcodeproj not found"
 fi
 
-# Verify signature
-codesign --verify --deep --strict --verbose=2 "$APP_DIR" 2>&1 | tail -3
+if [ -z "${SIGN_ID:-}" ]; then
+    fail "SIGN_ID is required. Use: SIGN_ID=\"Developer ID Application: NAME (TEAMID)\" $0"
+fi
+
+if [[ "$SIGN_ID" != Developer\ ID\ Application:* ]]; then
+    fail "SIGN_ID must be a Developer ID Application identity (got: '$SIGN_ID')"
+fi
+
+if ! security find-identity -v -p codesigning | grep -Fq "$SIGN_ID"; then
+    fail "Code signing identity not found in keychain: $SIGN_ID"
+fi
+
+echo "Building signed Release archive..."
+rm -rf "$ARCHIVE_PATH" "$APP_DIR"
+mkdir -p "$DIST_DIR"
+
+xcodebuild \
+    -project "$PROJECT_NAME.xcodeproj" \
+    -scheme "$SCHEME" \
+    -configuration Release \
+    -archivePath "$ARCHIVE_PATH" \
+    -derivedDataPath "$DERIVED_DATA" \
+    clean archive \
+    MARKETING_VERSION="$VERSION" \
+    CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    DEVELOPMENT_TEAM="$TEAM_ID" \
+    CODE_SIGN_STYLE=Manual \
+    CODE_SIGN_IDENTITY="$SIGN_ID" \
+    CODE_SIGNING_ALLOWED=YES \
+    CODE_SIGNING_REQUIRED=YES \
+    ENABLE_HARDENED_RUNTIME=YES \
+    ONLY_ACTIVE_ARCH=NO \
+    ARCHS="arm64 x86_64"
+
+BUILT_APP="$ARCHIVE_PATH/Products/Applications/$APP_NAME.app"
+if [ ! -d "$BUILT_APP" ]; then
+    fail "Archived app not found at $BUILT_APP"
+fi
+
+echo "Copying app to dist..."
+cp -R "$BUILT_APP" "$APP_DIR"
+
+BINARY="$APP_DIR/Contents/MacOS/$APP_NAME"
+if [ ! -x "$BINARY" ]; then
+    fail "App binary not found or not executable: $BINARY"
+fi
+
+ARCHS_OUT="$(lipo -archs "$BINARY")"
+case " $ARCHS_OUT " in
+    *" arm64 "*" x86_64 "*) ;;
+    *) fail "Expected universal binary with arm64 and x86_64, got: $ARCHS_OUT" ;;
+esac
+
+codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+SIGN_INFO="$(codesign -dv --verbose=4 "$APP_DIR" 2>&1)"
+
+echo "$SIGN_INFO" | grep -q "Authority=Developer ID Application" || fail "App is not signed with Developer ID Application"
+echo "$SIGN_INFO" | grep -q "flags=.*runtime" || fail "App is missing Hardened Runtime"
+echo "$SIGN_INFO" | grep -q "TeamIdentifier=" || fail "App signature is missing TeamIdentifier"
 
 echo ""
-echo "✅ Built: $APP_DIR"
-echo "   Size: $(du -sh "$APP_DIR" | cut -f1)"
+echo "Built: $APP_DIR"
+echo "Version: $VERSION ($BUILD_NUMBER)"
+echo "Architectures: $ARCHS_OUT"
+echo "Size: $(du -sh "$APP_DIR" | cut -f1)"

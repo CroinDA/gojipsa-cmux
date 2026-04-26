@@ -6,7 +6,7 @@ set -eo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-VERSION="${VERSION:-2.0.0}"
+VERSION="${VERSION:-2.0.1}"
 APP_NAME="GOJIPSA"
 DIST_DIR="$PROJECT_DIR/dist"
 DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
@@ -37,24 +37,28 @@ if [ ! -f "$DMG_PATH" ]; then
     exit 1
 fi
 
+if [ ! -d "$APP_DIR" ]; then
+    echo "❌ App not found at $APP_DIR" >&2
+    echo "   Run: ./scripts/build-app.sh && ./scripts/build-dmg.sh" >&2
+    exit 1
+fi
+
 # ─── Pre-check: app must be Hardened Runtime + Developer ID signed ───
 echo "🔍 Pre-flight checks..."
-if [ -d "$APP_DIR" ]; then
-    auth=$(codesign -dv --verbose=4 "$APP_DIR" 2>&1 | grep "Authority=Developer ID Application" || true)
-    if [ -z "$auth" ]; then
-        echo "❌ $APP_DIR is not signed with Developer ID Application." >&2
-        echo "   Re-run with proper SIGN_ID:" >&2
-        echo "     SIGN_ID=\"Developer ID Application: NAME (TEAMID)\" ./scripts/build-app.sh" >&2
-        exit 1
-    fi
-    runtime=$(codesign -dv --verbose=4 "$APP_DIR" 2>&1 | grep "flags=.*runtime" || true)
-    if [ -z "$runtime" ]; then
-        echo "❌ $APP_DIR missing Hardened Runtime." >&2
-        echo "   build-app.sh should add --options=runtime — please rebuild." >&2
-        exit 1
-    fi
-    echo "  ✅ Developer ID signed + Hardened Runtime"
+auth=$(codesign -dv --verbose=4 "$APP_DIR" 2>&1 | grep "Authority=Developer ID Application" || true)
+if [ -z "$auth" ]; then
+    echo "❌ $APP_DIR is not signed with Developer ID Application." >&2
+    echo "   Re-run with proper SIGN_ID:" >&2
+    echo "     SIGN_ID=\"Developer ID Application: NAME (TEAMID)\" ./scripts/build-app.sh" >&2
+    exit 1
 fi
+runtime=$(codesign -dv --verbose=4 "$APP_DIR" 2>&1 | grep "flags=.*runtime" || true)
+if [ -z "$runtime" ]; then
+    echo "❌ $APP_DIR missing Hardened Runtime." >&2
+    echo "   build-app.sh should add ENABLE_HARDENED_RUNTIME=YES — please rebuild." >&2
+    exit 1
+fi
+echo "  ✅ Developer ID signed + Hardened Runtime"
 
 # Pre-check: DMG itself must be Developer ID signed
 dmg_auth=$(codesign -dv --verbose=4 "$DMG_PATH" 2>&1 | grep "Authority=Developer ID Application" || true)
@@ -97,7 +101,7 @@ echo ""
 echo "   Submission ID: ${SUBMISSION_ID:-<unparsed>}"
 echo "   Status:        ${STATUS:-<unparsed>}"
 
-if [ "$STATUS" != "Accepted" ]; then
+if [ -n "$STATUS" ] && [ "$STATUS" != "Accepted" ]; then
     echo "" >&2
     echo "❌ Notarization not accepted." >&2
     if [ -n "$SUBMISSION_ID" ]; then
