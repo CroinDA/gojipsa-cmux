@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="2.0.3"
+VERSION="${GOJIPSA_VERSION:-2.0.4}"
 DMG="GOJIPSA-${VERSION}.dmg"
 URL="https://github.com/CroinDA/gojipsa-cmux/releases/download/v${VERSION}/${DMG}"
 VOL="/Volumes/GOJIPSA ${VERSION}"

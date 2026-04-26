@@ -133,10 +133,10 @@ open -a gojipsa
 
 ```bash
 cd ~/Downloads
-curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.2.dmg
-hdiutil attach GOJIPSA-2.0.2.dmg -nobrowse
-ditto "/Volumes/GOJIPSA 2.0.2/GOJIPSA.app" "/Applications/GOJIPSA.app"
-hdiutil detach "/Volumes/GOJIPSA 2.0.2"
+curl -LO https://github.com/CroinDA/gojipsa-cmux/releases/latest/download/GOJIPSA-2.0.4.dmg
+hdiutil attach GOJIPSA-2.0.4.dmg -nobrowse
+ditto "/Volumes/GOJIPSA 2.0.4/GOJIPSA.app" "/Applications/GOJIPSA.app"
+hdiutil detach "/Volumes/GOJIPSA 2.0.4"
 open -a gojipsa
 ```
 
@@ -156,7 +156,7 @@ swift build -c release
 open GOJIPSA.xcodeproj
 
 # 배포용 .app + .dmg 생성은 Xcode Apple ID 계정 필요
-VERSION=2.0.2 SIGNING_MODE=xcode-auto ./scripts/release.sh
+VERSION=2.0.4 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 ### 테스트 실행
@@ -174,7 +174,7 @@ xcodebuild -project GOJIPSA.xcodeproj -scheme GOJIPSA test
 Apple Developer Program 멤버는 [NOTARIZATION.md](NOTARIZATION.md) 참고:
 
 ```bash
-VERSION=2.0.2 SIGNING_MODE=xcode-auto ./scripts/release.sh
+VERSION=2.0.4 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 ---

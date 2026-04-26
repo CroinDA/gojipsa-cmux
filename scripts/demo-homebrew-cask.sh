@@ -2,8 +2,8 @@
 # Build and verify a local Homebrew cask demo for the current GOJIPSA release.
 set -euo pipefail
 
-VERSION="${VERSION:-2.0.2}"
-SHA256="${SHA256:-588739e8f8ae190674ddba03fc24070b951003d7b6e918b8cba67f4399a85508}"
+VERSION="${VERSION:-2.0.4}"
+SHA256="${SHA256:-c3ff18a70c06b6ca66a6141266dd57080a107796a50de96b5bac5fa8b135365f}"
 REPO="${REPO:-CroinDA/gojipsa-cmux}"
 CASK_TOKEN="${CASK_TOKEN:-gojipsa}"
 APP_BUNDLE="${APP_BUNDLE:-GOJIPSA.app}"
