@@ -155,9 +155,8 @@ swift build -c release
 # Xcode에서 열기
 open GOJIPSA.xcodeproj
 
-# 배포용 .app + .dmg 생성은 Developer ID 서명 필요
-SIGN_ID="Developer ID Application: NAME (TEAMID)" ./scripts/build-app.sh
-SIGN_ID="Developer ID Application: NAME (TEAMID)" ./scripts/build-dmg.sh
+# 배포용 .app + .dmg 생성은 Xcode Apple ID 계정 필요
+VERSION=2.0.1 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 ### 테스트 실행
@@ -170,15 +169,12 @@ GEMINI_TEST_KEY=$(cat ~/.gojipsa/api-key.txt) swift run GOJIPSATests
 xcodebuild -project GOJIPSA.xcodeproj -scheme GOJIPSA test
 ```
 
-### 배포용 (노타라이즈)
+### 배포용 (Gatekeeper 통과)
 
 Apple Developer Program 멤버는 [NOTARIZATION.md](NOTARIZATION.md) 참고:
 
 ```bash
-VERSION=2.0.1 \
-SIGN_ID="Developer ID Application: NAME (TEAMID)" \
-NOTARY_PROFILE="AC_NOTARY" \
-./scripts/release.sh
+VERSION=2.0.1 SIGNING_MODE=xcode-auto ./scripts/release.sh
 ```
 
 ---
